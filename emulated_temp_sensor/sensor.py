@@ -8,9 +8,14 @@ from homeassistant.const import TEMP_CELSIUS
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
+from homeassistant.helpers.restore_state import (
+    RestoreEntity,
+)  # To restore last stored value
 
 MIN_TEMP_KEY = "min_temp"
 MAX_TEMP_KEY = "max_temp"
+DOMAIN = "emulated_temp_sensor"
+DEFAULT_NAME = "Emulated Temperature Sensor"
 
 
 def setup_platform(
@@ -21,29 +26,45 @@ def setup_platform(
 ) -> None:
     """Set up the sensor platform."""
 
-    if (MIN_TEMP_KEY in config) and (MAX_TEMP_KEY in config):
-        add_entities([EmulatedTempSensor(config[MIN_TEMP_KEY], config[MAX_TEMP_KEY])])
-    elif MIN_TEMP_KEY in config:
-        add_entities([EmulatedTempSensor(min_temp=config[MIN_TEMP_KEY])])
-    elif MAX_TEMP_KEY in config:
-        add_entities([EmulatedTempSensor(max_temp=config[MAX_TEMP_KEY])])
+    if "name" in config:
+        name = config["name"]
     else:
-        add_entities([EmulatedTempSensor()])
+        name = DEFAULT_NAME
+
+    if (MIN_TEMP_KEY in config) and (MAX_TEMP_KEY in config):
+        add_entities(
+            [EmulatedTempSensor(name, config[MIN_TEMP_KEY], config[MAX_TEMP_KEY])]
+        )
+    elif MIN_TEMP_KEY in config:
+        add_entities([EmulatedTempSensor(name, min_temp=config[MIN_TEMP_KEY])])
+    elif MAX_TEMP_KEY in config:
+        add_entities([EmulatedTempSensor(name, max_temp=config[MAX_TEMP_KEY])])
+    else:
+        add_entities([EmulatedTempSensor(name)])
 
 
-class EmulatedTempSensor(SensorEntity):
-    """Representation of a Sensor."""
+class EmulatedTempSensor(SensorEntity, RestoreEntity):
+    """Representation of a Sensor. Extends Restore Entity to retrieve last temperature value."""
 
-    def __init__(self, min_temp: int = 18, max_temp: int = 25) -> None:
+    def __init__(
+        self, name=DEFAULT_NAME, min_temp: int = 18, max_temp: int = 25
+    ) -> None:
         """Initialize the sensor."""
+        self._sensor_name = name
         self._MIN_TMP: Final[int] = min_temp
         self._MAX_TMP: Final[int] = max_temp
-        self._sensor_name = "Emulated Temperature Sensor"
 
-        # Creating a random starting value
-        integer = randint(self._MIN_TMP, self._MAX_TMP - 1)
-        mantissa = randint(0, 9)
-        self._state = float(str(integer) + "." + str(mantissa))
+    async def async_added_to_hass(self):
+        """Call when entity about to be added to hass."""
+
+        # Retrieving last temperature value (if available)
+        last_state = await self.async_get_last_state()
+        if last_state:
+            self._state = float(last_state.state)
+        else:  # Creating a random starting value
+            integer = randint(self._MIN_TMP, self._MAX_TMP - 1)
+            mantissa = randint(0, 9)
+            self._state = float(str(integer) + "." + str(mantissa))
 
         print(self._sensor_name + " - initial temperature: " + str(self._state))
 
@@ -71,7 +92,7 @@ class EmulatedTempSensor(SensorEntity):
         x = randint(0, 2)
         if x == 0:
             pass
-        if x == 1:
+        elif x == 1:
             self._state = self._state - diff
         elif x == 2:
             self._state = self._state + diff
