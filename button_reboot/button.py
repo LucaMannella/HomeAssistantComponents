@@ -37,7 +37,7 @@ class ButtonReboot(ButtonEntity):
         """Handle the button press."""
         _LOGGER.info("%s pressed", self.name)
         if self.hass.is_running:
-            _LOGGER.info("Restarting HAss...")
+            _LOGGER.info("Restarting HAss")
             self.hass.services.call(domain="homeassistant", service="restart")
         else:
             _LOGGER.error("HAss is not running?!")

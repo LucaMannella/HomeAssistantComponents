@@ -41,7 +41,7 @@ class FileSwitch(SwitchEntity):
 
     def turn_on(self, **kwargs):
         """Turn the switch on."""
-        open(self._path, "a").close()
+        open(self._path, "ab").close()
 
     def turn_off(self, **kwargs):
         """Turn the switch off."""
