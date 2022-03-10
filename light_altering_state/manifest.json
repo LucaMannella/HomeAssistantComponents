@@ -1,6 +1,6 @@
 {
-  "domain": "light_simple_altering",
-  "name": "Light Simple Altering",
+  "domain": "light_altering_state",
+  "name": "Light Altering State",
   "documentation": "https://github.com/home-assistant/example-custom-config/tree/master/custom_components/example_light/",
   "dependencies": [],
   "codeowners": [],

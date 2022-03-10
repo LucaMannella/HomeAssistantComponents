@@ -20,18 +20,18 @@ def setup_platform(
 ) -> None:
     """Adding the Simple Altering light to Home Assistant."""
 
-    add_entities([LightSimpleAltering()])
+    add_entities([LightAlteringState()])
     return True
 
 
-class LightSimpleAltering(LightEntity):
+class LightAlteringState(LightEntity):
     """A Light able to modify other components"""
 
     _target: Final[str] = "switch.switch_target"
     _use_api: Final[bool] = False
 
     def __init__(self, upload: bool = False) -> None:
-        """Initialize a LightSimpleAltering."""
+        """Initialize a LightAlteringState."""
         self._name = "Simple Altering"
         self._brightness = None
         self._state = False
