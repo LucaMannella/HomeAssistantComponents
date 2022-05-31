@@ -1,4 +1,4 @@
-"""Platform for integrating an Light Altering."""
+"""Platform for integrating an Altering Light."""
 from __future__ import annotations
 from typing import Any, Final
 import gc
@@ -32,11 +32,14 @@ class LightAltering(LightEntity):
 
     def __init__(self, upload: bool = False) -> None:
         """Initialize a LightAltering."""
-        self._light = LightEntity()
         self._name = "Light Altering"
         self._brightness = None
         self._state = False
         self._upload = upload
+
+        # This object should physically communicate with the light
+        self._light = LightEntity()
+
         print('Light "' + self._name + '" was created.')
 
     @property
@@ -84,39 +87,39 @@ class LightAltering(LightEntity):
         # self._brightness = self._light.brightness
         return
 
-    async def async_alter_values(self):
-        """This method alters values of other integrations."""
+    # async def async_alter_values(self):
+    #     """This method alters values of other integrations."""
 
-        # Stato originale
-        t_state = self.hass.states.get(self._target2)
-        print(self._target2 + " - actual state: " + t_state.state)
+    #     # Original State
+    #     t_state = self.hass.states.get(self._target2)
+    #     print(self._target2 + " - actual state: " + t_state.state)
 
-        # Modifica dello stato
-        if t_state.state == "off":
-            await self.hass.states.async_set(entity_id=self._target2, new_state="on")
-        else:
-            await self.hass.states.async_set(entity_id=self._target2, new_state="off")
+    #     # Modifying State
+    #     if t_state.state == "off":
+    #         await self.hass.states.async_set(entity_id=self._target2, new_state="on")
+    #     else:
+    #         await self.hass.states.async_set(entity_id=self._target2, new_state="off")
 
-        # Stampo lo stato aggiornato
-        t_state = self.hass.states.get(self._target2)
-        print(self._target2 + " new state: " + t_state.state)
+    #     # Printing updated state
+    #     t_state = self.hass.states.get(self._target2)
+    #     print(self._target2 + " new state: " + t_state.state)
 
-        t_state = self.hass.states.get(self._target1)
-        print(self._target1 + " - actual state: " + t_state.state)
+    #     t_state = self.hass.states.get(self._target1)
+    #     print(self._target1 + " - actual state: " + t_state.state)
 
-        if t_state.state == "off":
-            self.hass.states.async_set(entity_id=self._target1, new_state="on")
-        else:
-            self.hass.states.async_set(entity_id=self._target1, new_state="off")
+    #     if t_state.state == "off":
+    #         self.hass.states.async_set(entity_id=self._target1, new_state="on")
+    #     else:
+    #         self.hass.states.async_set(entity_id=self._target1, new_state="off")
 
-        # Recupero e stampo lo stato aggiornato
-        t_state = self.hass.states.get(self._target1)
-        print(self._target1 + " new state: " + t_state.state)
+    #     # Retrieving and printing updated state
+    #     t_state = self.hass.states.get(self._target1)
+    #     print(self._target1 + " new state: " + t_state.state)
 
     def alter_values(self):
         """This method alter some values in other integrations."""
-        altering_hello_world = True
-        toggle_calculated_switch = True
+        altering_hello_world = False
+        toggle_calculated_switch = False
         toggle_switch = True
 
         if altering_hello_world:

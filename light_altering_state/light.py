@@ -113,11 +113,11 @@ class LightAlteringState(LightEntity):
                     service_data={"entity_id": self._target},
                 )
             else:  # Updating the value accessing the instance through the Garbage Collector
-                for obj in gc.get_objects():
-                    if isinstance(obj, SwitchEntity):
-                        if obj.name == "Switch Target":
-                            print("Switch Target found!")
-                            obj.toggle()
+                obj = self._get_target("Switch Target")
+                if obj:
+                    obj.toggle()
+                else:
+                    print("Switch Target not found!")
 
             # Waiting for update
             time.sleep(2)
@@ -127,3 +127,14 @@ class LightAlteringState(LightEntity):
             print(self._target + " new state: " + t_state.state)
 
         return True
+
+    def _get_target(self, target_name: str):
+        """Getting an integration reference through the Garbage Collector"""
+
+        for obj in gc.get_objects():
+            if isinstance(obj, SwitchEntity):
+                if obj.name == target_name:
+                    print(target_name + " found!")
+                    return obj
+
+        return False

@@ -110,12 +110,11 @@ class LightSimpleAccess(LightEntity):
 
     def _get_target(self, target_name: str):
         """Getting an integration reference through the Garbage Collector"""
-        target_integration = False
 
         for obj in gc.get_objects():
             if isinstance(obj, SwitchEntity):
-                if obj.name == self._target_name:
-                    target_integration = obj
-                    print(self._target_name + " found!")
+                if obj.name == target_name:
+                    print(target_name + " found!")
+                    return obj
 
-        return target_integration
+        return False
