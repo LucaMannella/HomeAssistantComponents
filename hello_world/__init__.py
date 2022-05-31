@@ -3,8 +3,7 @@ The "hello world" custom component.
 This component implements the bare minimum that a component should implement.
 
 Configuration:
-To use the hello_world component you will need to add the following line into your
-configuration.yaml file
+To use the hello_world component you will need to add the following line into your configuration.yaml file
 
 hello_world:
 """
