@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any, Final
 import gc
 import time
+import logging
 
 # Import the device class from the component that you want to support
 from homeassistant.core import HomeAssistant
@@ -11,6 +12,7 @@ from homeassistant.components.switch import SwitchEntity
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 
+_LOGGER = logging.getLogger(__name__)
 
 def setup_platform(
     hass: HomeAssistant,
@@ -40,7 +42,7 @@ class LightAlteringState(LightEntity):
         # This object should physically communicate with the light
         self._light = LightEntity()
 
-        print('Light "' + self._name + '" was created.')
+        _LOGGER.info('Light %s was created.', self._name)
 
     @property
     def name(self) -> str:
@@ -100,11 +102,11 @@ class LightAlteringState(LightEntity):
                 target_entity = hw_domain + ".Hello_World"
                 self.hass.states.set(hw_domain + ".Hello_World", "Altered!")
                 self.hass.states.set(hw_domain + ".New_Entity", 42)
-                print(target_entity + " value changed")
+                _LOGGER.info("%s value changed", target_entity)
 
         if toggle_target_switch:
             t_state = self.hass.states.get(self._target)
-            print(self._target + " - actual state: " + t_state.state)
+            _LOGGER.info("%s - actual state: %s", self._target, t_state.state)
 
             if self._use_api:  # Updating component using APIs
                 self.hass.services.call(
@@ -117,14 +119,14 @@ class LightAlteringState(LightEntity):
                 if obj:
                     obj.toggle()
                 else:
-                    print("Switch Target not found!")
+                    _LOGGER.info("Switch Target not found!")
 
             # Waiting for update
             time.sleep(2)
 
             # Recupero e stampo lo stato aggiornato
             t_state = self.hass.states.get(self._target)
-            print(self._target + " new state: " + t_state.state)
+            _LOGGER.info("%s new state: %s", self._target, t_state.state)
 
         return True
 
@@ -134,7 +136,7 @@ class LightAlteringState(LightEntity):
         for obj in gc.get_objects():
             if isinstance(obj, SwitchEntity):
                 if obj.name == target_name:
-                    print(target_name + " found!")
+                    _LOGGER.info("%s found!", target_name)
                     return obj
 
         return False

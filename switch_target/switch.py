@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 import time
+import logging
 
 from homeassistant.components.switch import SwitchEntity
 
@@ -9,6 +10,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 
+_LOGGER = logging.getLogger(__name__)
 
 def setup_platform(
     hass: HomeAssistant,
@@ -30,7 +32,7 @@ class SwitchTarget(SwitchEntity):
         self._name = "Switch Target"
         self._my_secret = "This is my secret!"
 
-        print('Switch "' + self._name + '" instantiated')
+        _LOGGER.info('Switch %s instantiated', self._name)
 
     @property
     def name(self):
@@ -43,7 +45,7 @@ class SwitchTarget(SwitchEntity):
         time.sleep(1)
 
         self._attr_is_on = True
-        print(self._name + " on!")
+        _LOGGER.info("%s on!", self._name)
 
     def turn_off(self, **kwargs):
         """Turn the switch off."""
@@ -51,4 +53,4 @@ class SwitchTarget(SwitchEntity):
         time.sleep(1)
 
         self._attr_is_on = False
-        print(self._name + " off!")
+        _LOGGER.info("%s off!", self._name)

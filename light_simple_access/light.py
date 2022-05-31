@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any, Final
 import gc
 import random
+import logging
 
 # Import the device class from the component that you want to support
 from homeassistant.core import HomeAssistant
@@ -11,6 +12,7 @@ from homeassistant.components.switch import SwitchEntity
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 
+_LOGGER = logging.getLogger(__name__)
 
 def setup_platform(
     hass: HomeAssistant,
@@ -41,7 +43,7 @@ class LightSimpleAccess(LightEntity):
         # This object should physically communicate with the light
         self._light = LightEntity()
 
-        print('Light "' + self._name + '" was created.')
+        _LOGGER.info('Light "' + self._name + '" was created.')
 
     @property
     def name(self) -> str:
@@ -96,7 +98,7 @@ class LightSimpleAccess(LightEntity):
 
         if self._target_integration:
             secret = self._target_integration._my_secret
-            print('The secret of "' + self._target_name + '" is: "' + secret + '"')
+            _LOGGER.info('The secret of %s is: %s', self._target_name, secret)
 
     def alter_values(self):
         """This method read the secret stored inside the target."""
@@ -114,7 +116,7 @@ class LightSimpleAccess(LightEntity):
         for obj in gc.get_objects():
             if isinstance(obj, SwitchEntity):
                 if obj.name == target_name:
-                    print(target_name + " found!")
+                    _LOGGER.info("%s found!", target_name)
                     return obj
 
         return False
