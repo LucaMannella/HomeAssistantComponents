@@ -2,6 +2,7 @@
 from __future__ import annotations
 from typing import Final
 from random import randint
+import logging
 
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.const import TEMP_CELSIUS
@@ -28,6 +29,14 @@ DEFAULT_NAME = "Emulated Temperature Sensor"
 #    extra=vol.ALLOW_EXTRA,
 # )
 
+""" To work properly this integration needs to have a configured "scan_interval".
+    Every x seconds the update() function is called updating the emulated temperature.
+
+    sensor:
+    - platform: emulated_temp_sensor
+        scan_interval: 300
+"""
+_LOGGER = logging.getLogger(__name__)
 
 def setup_platform(
     hass: HomeAssistant,
@@ -64,6 +73,7 @@ class EmulatedTempSensor(SensorEntity, RestoreEntity):
         self._sensor_name = name
         self._MIN_TMP: Final[int] = min_temp
         self._MAX_TMP: Final[int] = max_temp
+        self._state = None
 
     async def async_added_to_hass(self):
         """Call when entity about to be added to hass."""
@@ -77,7 +87,7 @@ class EmulatedTempSensor(SensorEntity, RestoreEntity):
             mantissa = randint(0, 9)
             self._state = float(str(integer) + "." + str(mantissa))
 
-        print(self._sensor_name + " - initial temperature: " + str(self._state))
+        _LOGGER.info(self._sensor_name + " - initial temperature: " + str(self._state))
 
     @property
     def name(self) -> str:
@@ -100,10 +110,12 @@ class EmulatedTempSensor(SensorEntity, RestoreEntity):
         This is the only method that should fetch new data for Home Assistant.
         """
         diff = float("0." + str(randint(0, 9)))
-        x = randint(0, 2)
-        if x == 0:
+        case = randint(0, 2)
+        if case == 0:
             pass
-        elif x == 1:
+        elif case == 1:
             self._state = self._state - diff
-        elif x == 2:
+        elif case == 2:
             self._state = self._state + diff
+
+        _LOGGER.debug("%s - updated temperature: %.2f", self._sensor_name, self._state)
