@@ -43,12 +43,12 @@ class SwitchLocking(SwitchEntity):
 
     def turn_on(self, **kwargs):
         """Turn the switch on."""
-        _LOGGER.debug("%s - turning 'on' the switch", self.name)
+        _LOGGER.info("%s - turning 'on' the switch", self.name)
         should_be_locked = True
         count = 1
         while should_be_locked:
             time.sleep(1)
-            _LOGGER.info("turning on... %s second elapsed", str(count))
+            _LOGGER.debug("Turning on... %s second elapsed", str(count))
             count += 1
 
         self._is_on = True
@@ -56,12 +56,12 @@ class SwitchLocking(SwitchEntity):
 
     def turn_off(self, **kwargs):
         """Turn the switch off."""
-        _LOGGER.debug("%s - turning 'off' the Switch", self.name)
+        _LOGGER.info("%s - turning 'off' the Switch", self.name)
         should_be_locked = True
         count = 1
         while should_be_locked:
             time.sleep(1)
-            _LOGGER.info("turning off... %s second elapsed", str(count))
+            _LOGGER.debug("Turning off... %s second elapsed", str(count))
             count += 1
 
         self._is_on = False
