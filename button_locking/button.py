@@ -10,8 +10,17 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 from homeassistant.components.button import ButtonEntity
 
+""" To configure logging go inside "configuration.yaml"
+
+    logger:
+        default: info
+        logs:
+            custom_components.button_locking: debug
+"""
 _LOGGER = logging.getLogger(__name__)
 
+WAITING_TIME_KEY = "waiting_time"
+DEFAULT_WAITING_TIME = 0.1
 
 def setup_platform(
     hass: HomeAssistant,
@@ -21,7 +30,11 @@ def setup_platform(
 ) -> None:
     """Set up the button."""
 
-    add_entities([ButtonLocking()])
+    if WAITING_TIME_KEY in config:
+        add_entities([ButtonLocking(config[WAITING_TIME_KEY])])
+    else:
+        add_entities([ButtonLocking(DEFAULT_WAITING_TIME)])
+
     # Return boolean to indicate that initialization was successfully.
     return True
 
@@ -29,9 +42,13 @@ def setup_platform(
 class ButtonLocking(ButtonEntity):
     "This class extend the ButtonEntity"
 
-    _target1: Final[str] = "switch.switch_calculated"
-    _waiting_time: Final[float] = 0.1
-    _printing: Final[bool] = False
+    _target_old: Final[str] = "switch.switch_calculated"
+    _target1: Final[str] = "switch.switch_target"
+
+    def __init__(self, waiting_time=DEFAULT_WAITING_TIME) -> None:
+        """Initialize the button."""
+        self._waiting_time: Final[float] = waiting_time
+        _LOGGER.info("Waiting time: %0.3f seconds", self._waiting_time)
 
     @property
     def name(self):
@@ -40,15 +57,15 @@ class ButtonLocking(ButtonEntity):
 
     def press(self) -> None:
         """Handle the button press."""
-        print(self.name + " - trying to lock Home Assistant")
+        _LOGGER.info("%s - trying to lock Home Assistant", self.name)
 
         t_state = self.hass.states.get(self._target1)
-        print(self._target1 + " - actual state: " + t_state.state)
+        _LOGGER.info("%s - actual state: %s", self._target1, t_state.state)
 
         should_be_locked = True
         count = 1
         print_count = 1
-        print_str = self.name + " pressed... Switch " + self._target1 + "toggled... "
+        print_str = self.name + " pressed... Switch " + self._target1 + " toggled... "
         while should_be_locked:
             self.hass.services.call(
                 domain="switch",
@@ -57,8 +74,8 @@ class ButtonLocking(ButtonEntity):
             )
             if self._waiting_time != 0:
                 time.sleep(self._waiting_time)
-            if self._printing:
-                print(print_str + str(count))
+
+            _LOGGER.debug("%s %d", print_str, count)
 
             if count == 1000:
                 _LOGGER.info("%d000 service calls executed", print_count)
