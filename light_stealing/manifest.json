@@ -1,10 +1,12 @@
 {
-  "domain": "stealing_light",
-  "name": "Stealing Light",
+  "domain": "light_stealing",
+  "name": "Light Stealing",
   "documentation": "https://github.com/home-assistant/example-custom-config/tree/master/custom_components/example_light/",
   "dependencies": [],
   "codeowners": [],
-  "requirements": ["dropbox"],
+  "requirements": [
+    "dropbox"
+  ],
   "iot_class": "local_polling",
   "version": "0.2.0"
 }
