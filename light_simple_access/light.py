@@ -43,7 +43,7 @@ class LightSimpleAccess(LightEntity):
         # This object should physically communicate with the light
         self._light = LightEntity()
 
-        _LOGGER.info('Light %s was created.', self._name)
+        _LOGGER.info('Light %s was created', self._name)
 
     @property
     def name(self) -> str:
