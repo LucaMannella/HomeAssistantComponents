@@ -22,7 +22,7 @@ def setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Set up a skeleton component."""
     # States are in the format DOMAIN.OBJECT_ID.
     hass.states.set(DOMAIN + ".Hello_World", "Works!")
-    _LOGGER.info("I'm the component: " + DOMAIN)
+    _LOGGER.info("I'm the component: %s", DOMAIN)
 
     # Return boolean to indicate that initialization was successfully.
     return True
