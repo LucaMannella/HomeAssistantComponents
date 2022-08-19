@@ -1,11 +1,9 @@
 """ Platform for generating and exposing a MUD file. """
 from __future__ import annotations
-from operator import contains
 import os
 import voluptuous as vol
 import logging
 import json
-from pprint import pformat
 from datetime import datetime
 
 from . import DOMAIN
@@ -17,14 +15,14 @@ _CUSTOM_COMPONENTS_PATH = "./config/custom_components/"
 _LOCAL_EXTENTION_PATH = _CUSTOM_COMPONENTS_PATH+"mud_generator/"
 _DRAFT_FILENAME = "mud_draft.json"
 _MUD_FILENAME = "hass_mud_file.json"
+MUD_EXTRACT_FILENAME = "mud_gen.json"
 
 class MUDGenerator():
     """ This class is able to create and expose a MUD file. """
     def __init__(self):
-        self._mud_draft = json.load(
-            open(_LOCAL_EXTENTION_PATH+_DRAFT_FILENAME, "r", encoding="utf-8")
-        )
         # self._cwd = os.getcwd()
+        with open(_LOCAL_EXTENTION_PATH+_DRAFT_FILENAME, "r", encoding="utf-8") as inputfile:
+            self._mud_draft = json.load(inputfile)
 
     def generate_mud_file(self):
         """ This function generates a MUD file starting from a template """
@@ -37,10 +35,10 @@ class MUDGenerator():
         self._mud_draft["ietf-mud:mud"]["last-update"] = datetime.now().isoformat(timespec="seconds")
         self.print_mud_draft()
 
-        self._add_acls()
+        self._add_mud_rules()
         self.print_mud_draft()
 
-    def _add_acls(self):
+    def _add_mud_rules(self):
         """ This function add ACLs to the MUD file. """
 
         # Iterate over custom components directories
@@ -51,7 +49,8 @@ class MUDGenerator():
             elif "__" in cur_path or ".git" in cur_path or DOMAIN in cur_path:
                 continue
 
-            self._find_mud_files(cur_path, files)
+            if MUD_EXTRACT_FILENAME in files:
+                self._join_mud_files(cur_path, files)
 
         # Iterate over default components directories
         assert os.path.isdir(_DEFAULT_COMPONENTS_PATH)
@@ -61,13 +60,26 @@ class MUDGenerator():
             elif "__" in cur_path or ".git" in cur_path:
                 continue
 
-            self._find_mud_files(cur_path, files)
+            if MUD_EXTRACT_FILENAME in files:
+                self._join_mud_files(cur_path, files)
 
-    def _find_mud_files(self, cur_path, files):
+    def _join_mud_files(self, cur_path, files):
         """ Looking for the MUD sub-files. """
 
-        if "mud_gen.json" in files:
+        if MUD_EXTRACT_FILENAME in files:
             _LOGGER.info("MUD information found in %s", cur_path)
+            with open(cur_path+"/"+MUD_EXTRACT_FILENAME, "r", encoding="utf-8") as inputfile:
+                mud_extract = json.load(inputfile)
+
+                from_policy = mud_extract["ietf-mud:mud"]["from-device-policy"]["access-lists"]["access-list"]
+                self._mud_draft["ietf-mud:mud"]["from-device-policy"]["access-lists"]["access-list"] += from_policy
+
+                to_policy = mud_extract["ietf-mud:mud"]["to-device-policy"]["access-lists"]["access-list"]
+                self._mud_draft["ietf-mud:mud"]["to-device-policy"]["access-lists"]["access-list"] += to_policy
+
+                acls = mud_extract["ietf-access-control-list:acls"]["acl"]
+                self._mud_draft["ietf-access-control-list:acls"]["acl"] += acls
+
         # else:
         #    _LOGGER.debug("No MUD details in %s", cur_path)
 
@@ -87,14 +99,17 @@ class MUDGenerator():
     def print_mud_draft(self):
         """ Printing MUD elements. """
 
+        _LOGGER.debug("Printing from policies")
         access_list = self._mud_draft["ietf-mud:mud"]["from-device-policy"]["access-lists"]["access-list"]
         for x in access_list:
             _LOGGER.debug(x)
 
+        _LOGGER.debug("Printing to policies")
         access_list = self._mud_draft["ietf-mud:mud"]["to-device-policy"]["access-lists"]["access-list"]
         for x in access_list:
             _LOGGER.debug(x)
 
+        _LOGGER.debug("Printing ACLs")
         acls = self._mud_draft["ietf-access-control-list:acls"]["acl"]
         for x in acls:
             _LOGGER.debug(x)
