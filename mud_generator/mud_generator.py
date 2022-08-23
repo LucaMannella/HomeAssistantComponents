@@ -1,6 +1,7 @@
 """ Platform for generating and exposing a MUD file. """
 from __future__ import annotations
 import os
+import shutil
 import voluptuous as vol
 import logging
 import json
@@ -13,6 +14,7 @@ _LOGGER = logging.getLogger(__name__)
 _DEFAULT_COMPONENTS_PATH = "./homeassistant/components/"
 _CUSTOM_COMPONENTS_PATH = "./config/custom_components/"
 _LOCAL_EXTENTION_PATH = _CUSTOM_COMPONENTS_PATH+"mud_generator/"
+_STORAGE_PATH = "./config/www/MUD/"
 _DRAFT_FILENAME = "mud_draft.json"
 _MUD_FILENAME = "hass_mud_file.json"
 MUD_EXTRACT_FILENAME = "mud_gen.json"
@@ -86,14 +88,27 @@ class MUDGenerator():
 
     def _write_mud_file(self):
         """ Writing the new MUD file on a JSON file. """
-        with open(_LOCAL_EXTENTION_PATH+_MUD_FILENAME, "w", encoding="utf-8") as outfile:
+        local_path_name = _LOCAL_EXTENTION_PATH+_MUD_FILENAME
+        with open(local_path_name, "w", encoding="utf-8") as outfile:
             json.dump(self._mud_draft, outfile, indent=2)
-        _LOGGER.warning("The MUD file has been generated")
+        _LOGGER.debug("The MUD file has been generated inside the integration folder for debug purposes")
+
+        # ToDo: it is necessary to create the folder in advance
+        shutil.copyfile(local_path_name, _STORAGE_PATH+_MUD_FILENAME)
+        _LOGGER.warning("The MUD file is ready to be exposed!")
 
 
-    def expose_mud_file(self):
+    def expose_mud_file(self, mode="DHCP"):
         """ Exposing the MUD file to the MUD manager. """
-        pass
+
+        if mode == "DHCP":
+            _LOGGER.debug("Exposing the MUD file through DHCP")
+        elif mode == "LLDP":
+            _LOGGER.debug("Exposing the MUD file through LLDP")
+        elif mode == "802.1AR":
+            _LOGGER.debug("Exposing the MUD file inside a X.509 certificate through 802.1AR")
+        else:
+            _LOGGER.error("MUD file not exposed, unrecognized mode!")
 
 
     def print_mud_draft(self):
