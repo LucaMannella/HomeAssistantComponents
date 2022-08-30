@@ -1,0 +1,92 @@
+{
+    "ietf-mud:mud": {
+        "mud-version": 1,
+        "extensions": [
+            "ol",
+            "transparency"
+        ],
+        "ol": {
+            "owners": [
+                "e-Lite, research group"
+            ],
+            "spdx-tag": "0BSD"
+        },
+        "mudtx:transparency": {
+            "sboms": [
+                {
+                    "version-info": "",
+                    "sbom-url": "https://www.home-assistant.io/docs/"
+                }
+            ]
+        },
+        "mud-url": "https://elite.polito.it/home-assistant/HomeAssistant.json",
+        "mud-signature": "https://elite.polito.it/home-assistant/HomeAssistant.p7s",
+        "last-update": "2022-08-22T15:26:08+00:00",
+        "cache-validity": 48,
+        "is-supported": true,
+        "systeminfo": "Home Assistant",
+        "mfg-name": "Nabu Casa, Inc",
+        "documentation": "https://elite.polito.it/home-assistant/doc",
+        "model-name": "HomeAssistant",
+        "from-device-policy": {
+            "access-lists": {
+                "access-list": [
+                    {
+                        "name": "mud-36571-v4fr"
+                    }
+                ]
+            }
+        },
+        "to-device-policy": {
+            "access-lists": {
+                "access-list": [
+                    {
+                        "name": "mud-36571-v4to"
+                    }
+                ]
+            }
+        }
+    },
+    "ietf-access-control-list:acls": {
+        "acl": [
+            {
+                "name": "mud-36571-v4to",
+                "type": "ipv4-acl-type",
+                "aces": {
+                    "ace": [
+                        {
+                            "name": "cl0-todev",
+                            "matches": {
+                                "ipv4": {
+                                    "ietf-acldns:src-dnsname": "home-assistant.io"
+                                }
+                            },
+                            "actions": {
+                                "forwarding": "accept"
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "mud-36571-v4fr",
+                "type": "ipv4-acl-type",
+                "aces": {
+                    "ace": [
+                        {
+                            "name": "cl0-frdev",
+                            "matches": {
+                                "ipv4": {
+                                    "ietf-acldns:dst-dnsname": "home-assistant.io"
+                                }
+                            },
+                            "actions": {
+                                "forwarding": "accept"
+                            }
+                        }
+                    ]
+                }
+            }
+        ]
+    }
+}
