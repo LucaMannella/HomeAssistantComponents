@@ -1,11 +1,16 @@
 """ Platform for generating and exposing a MUD file. """
 from __future__ import annotations
-import os
-import shutil
-import voluptuous as vol
-import logging
-import json
 from datetime import datetime
+import json
+import logging
+import os
+import random
+import socket
+
+from getmac import get_mac_address as gma
+import voluptuous as vol
+from scapy.all import Ether, IP, UDP, BOOTP, DHCP, sendp
+import shutil
 
 from . import DOMAIN
 
@@ -35,10 +40,7 @@ class MUDGenerator():
         """ This function adds the additional requried parameters to the generated MUD file"""
         # mud_draft["mud-url"] = "http://iot-device.example.com/dnsname"
         self._mud_draft["ietf-mud:mud"]["last-update"] = datetime.now().isoformat(timespec="seconds")
-        self.print_mud_draft()
-
         self._add_mud_rules()
-        self.print_mud_draft()
 
     def _add_mud_rules(self):
         """ This function add ACLs to the MUD file. """
@@ -81,7 +83,6 @@ class MUDGenerator():
 
                 acls = mud_extract["ietf-access-control-list:acls"]["acl"]
                 self._mud_draft["ietf-access-control-list:acls"]["acl"] += acls
-
         # else:
         #    _LOGGER.debug("No MUD details in %s", cur_path)
 
@@ -103,13 +104,42 @@ class MUDGenerator():
 
         if mode == "DHCP":
             _LOGGER.debug("Exposing the MUD file through DHCP")
+            self.expose_MUD_file_DHCP()
         elif mode == "LLDP":
-            _LOGGER.debug("Exposing the MUD file through LLDP")
+            _LOGGER.debug("Exposing the MUD file through LLDP is not yet implemented")
         elif mode == "802.1AR":
-            _LOGGER.debug("Exposing the MUD file inside a X.509 certificate through 802.1AR")
+            _LOGGER.debug("Exposing the MUD file inside a X.509 certificate through 802.1AR is not yet implemented")
         else:
             _LOGGER.error("MUD file not exposed, unrecognized mode!")
 
+    def expose_MUD_file_DHCP(self):
+        HAss_mac = gma()
+        HAss_IP = socket.gethostbyname(socket.gethostname())
+
+        _LOGGER.debug("HAss MAC address is: %s", HAss_mac)
+        _LOGGER.debug("HAss IP address is: %s", HAss_IP)
+
+        MUD_URL = "http://"+HAss_IP+":8123/local/MUD/hass_mud_file.json"
+        _LOGGER.debug("Trying to expose the MUD URL: %s", MUD_URL)
+        packet = (
+            Ether(dst="ff:ff:ff:ff:ff:ff") /
+            IP(src=HAss_IP, dst="255.255.255.255") /
+            UDP(sport=68, dport=67) /
+            BOOTP(
+                chaddr=self.mac_to_bytes(HAss_mac),
+                xid=random.randint(1, 2**32-1),  # Random integer required by DHCP
+            ) /
+            # DHCP(options=[("message-type", "discover"), "end"])
+            DHCP(options=[("message-type", "discover"), ("mud-url", MUD_URL), "end"])
+        )
+        print(packet.__str__)
+        x = sendp(packet, iface="eth0", verbose=True, return_packets=True)
+
+        _LOGGER.debug("MUD URL Exposed!")
+
+    def mac_to_bytes(self, mac_addr: str) -> bytes:
+        """ Converts a MAC address string to bytes. """
+        return int(mac_addr.replace(":", ""), 16).to_bytes(6, "big")
 
     def print_mud_draft(self):
         """ Printing MUD elements. """
