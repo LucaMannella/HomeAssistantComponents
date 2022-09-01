@@ -21,8 +21,13 @@ _CUSTOM_COMPONENTS_PATH = "./config/custom_components/"
 _LOCAL_EXTENTION_PATH = _CUSTOM_COMPONENTS_PATH+"mud_generator/"
 _STORAGE_PATH = "./config/www/MUD/"
 _DRAFT_FILENAME = "mud_draft.json"
-_MUD_FILENAME = "hass_mud_file.json"
 MUD_EXTRACT_FILENAME = "mud_gen.json"
+
+_FILENAME = "hass_mud_file"
+_MUD_FILENAME = _FILENAME+".json"
+_SIGNATURE_FILENAME = _FILENAME+".p7s"
+_CERTIFICATE_FILENAME = "cert.pem"
+_KEY_FILENAME = "key.pem"
 
 class MUDGenerator():
     """ This class is able to create and expose a MUD file. """
@@ -31,10 +36,10 @@ class MUDGenerator():
         with open(_LOCAL_EXTENTION_PATH+_DRAFT_FILENAME, "r", encoding="utf-8") as inputfile:
             self._mud_draft = json.load(inputfile)
 
-    def generate_mud_file(self):
+    def generate_mud_file(self, sign=True):
         """ This function generates a MUD file starting from a template """
         self._add_fields()
-        self._write_mud_file()
+        self._write_mud_file(sign)
 
     def _add_fields(self):
         """ This function adds the additional requried parameters to the generated MUD file"""
@@ -87,12 +92,35 @@ class MUDGenerator():
         #    _LOGGER.debug("No MUD details in %s", cur_path)
 
 
-    def _write_mud_file(self):
+    def _write_mud_file(self, sign=True):
         """ Writing the new MUD file on a JSON file. """
         local_path_name = _LOCAL_EXTENTION_PATH+_MUD_FILENAME
         with open(local_path_name, "w", encoding="utf-8") as outfile:
             json.dump(self._mud_draft, outfile, indent=2)
         _LOGGER.debug("The MUD file has been generated inside the integration folder for debug purposes")
+
+        if sign:
+            _LOGGER.debug("Signing the MUD file")
+            certificate_path = _LOCAL_EXTENTION_PATH+_CERTIFICATE_FILENAME
+            key_path = _LOCAL_EXTENTION_PATH+_KEY_FILENAME
+            signature_path = _STORAGE_PATH+_SIGNATURE_FILENAME
+            if not os.path.exists(certificate_path):
+                _LOGGER.debug("X.509 certificate is missing. I am going to create it")
+                # generating certificate
+                cert_command = 'openssl req -x509 -newkey rsa:4096 -sha256 -days 3650 -nodes -keyout '+key_path+' -out '+certificate_path+' -subj "/CN=HomeAssistantMUDIntegration"'
+                ok = os.system(cert_command)
+                if ok == 0:
+                    _LOGGER.debug("Certificiate succesfully generated!")
+                else:
+                    _LOGGER.critical("Certificate not generated, will be impossible to sign the MUD file!")
+
+            # Signing the generated MUD file
+            sign_command = "openssl cms -sign -signer "+certificate_path+" -inkey "+key_path+" -in "+local_path_name+" -binary -outform DER -binary -out "+signature_path
+            ok = os.system(sign_command)
+            if ok == 0:
+                _LOGGER.debug("MUD file signed")
+            else:
+                _LOGGER.error("MUD file not signed!")
 
         # ToDo: it is necessary to create the folder in advance
         shutil.copyfile(local_path_name, _STORAGE_PATH+_MUD_FILENAME)

@@ -44,7 +44,8 @@ class MUDGeneratorButton(ButtonEntity):
         _LOGGER.info('Creating %s', self._name)
 
         self._mud_gen = MUDGenerator()
-        self.press()
+        self._mud_gen.generate_mud_file()
+        self._mud_gen.expose_mud_file()
 
     def press(self) -> None:
         # ToDo: necessary to implement a mechanism for not joining same MUD files
