@@ -146,3 +146,8 @@ cython_debug/
 
 # PyCharm
 .idea/
+
+# Aggiunte personali
+mud_generator/hass_mud_file.json
+mud_generator/*.pem
+hello*

@@ -30,7 +30,7 @@ def setup_platform(
     """ Set up the MUD Generator platform. """
     _LOGGER.info(pformat(config))
 
-    params = {CONF_NAME: "MUD Generator"} #config[CONF_NAME]}
+    params = {CONF_NAME: "Regenerate MUD"} #config[CONF_NAME]}
 
     add_entities([MUDGeneratorButton(params)])
     return True
@@ -46,6 +46,11 @@ class MUDGeneratorButton(ButtonEntity):
         self._mud_gen = MUDGenerator()
         self._mud_gen.generate_mud_file()
         self._mud_gen.expose_mud_file()
+
+    @property
+    def name(self):
+        """Name of the entity."""
+        return self._name
 
     def press(self) -> None:
         # ToDo: necessary to implement a mechanism for not joining same MUD files
