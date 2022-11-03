@@ -16,7 +16,7 @@ WAITING_TIME_KEY = "waiting_time"
 PING_NUMBER_KEY = "ping_number"
 DOMAINS_KEY = "urls"
 DEFAULT_WAITING_TIME = 60
-DEFAULT_PING_NUMBER = 10
+DEFAULT_PING_NUMBER = 1
 DEFAULT_DOMAINS = ["homeassistant.io"]
 
 def setup_platform(
