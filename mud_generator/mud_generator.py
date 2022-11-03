@@ -12,7 +12,7 @@ import voluptuous as vol
 from scapy.all import Ether, IP, UDP, BOOTP, DHCP, sendp
 import shutil
 
-from . import DOMAIN
+from . import DOMAIN, util_network as nu
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -140,34 +140,79 @@ class MUDGenerator():
         else:
             _LOGGER.error("MUD file not exposed, unrecognized mode!")
 
-    def expose_MUD_file_DHCP(self):
+    def expose_MUD_file_DHCP(self, interface_name="wlan0"):
         HAss_mac = gma()
-        HAss_IP = socket.gethostbyname(socket.gethostname())
+        byte_mac_addr=nu.mac_to_bytes(HAss_mac)
 
-        _LOGGER.debug("HAss MAC address is: %s", HAss_mac)
-        _LOGGER.debug("HAss IP address is: %s", HAss_IP)
+        hostname = socket.gethostname()
+        # HAss_IP = socket.gethostbyname(hostname)
+        HAss_IP = nu.get_ip()
+        # HAss_IP = "192.168.7.242"
+
+        # _LOGGER.debug("HAss MAC address is: %s", HAss_mac)
+        # _LOGGER.debug("HAss IP address is: %s", HAss_IP)
+        _LOGGER.debug("%s --- IP: %s --- MAC address: %s", hostname, HAss_IP, HAss_mac)
+
+        # _LOGGER.debug("Releasing IP address...")
+        # self._send_dchp_message("release", HAss_IP, byte_mac_addr, hostname, interface_name)
 
         MUD_URL = "http://"+HAss_IP+":8123/local/MUD/hass_mud_file.json"
         _LOGGER.debug("Trying to expose the MUD URL: %s", MUD_URL)
-        packet = (
-            Ether(dst="ff:ff:ff:ff:ff:ff") /
-            IP(src=HAss_IP, dst="255.255.255.255") /
-            UDP(sport=68, dport=67) /
-            BOOTP(
-                chaddr=self.mac_to_bytes(HAss_mac),
-                xid=random.randint(1, 2**32-1),  # Random integer required by DHCP
-            ) /
-            # DHCP(options=[("message-type", "discover"), "end"])
-            DHCP(options=[("message-type", "discover"), ("mud-url", MUD_URL), "end"])
-        )
-        print(packet.__str__)
-        x = sendp(packet, iface="eth0", verbose=True, return_packets=True)
+        # _LOGGER.debug("Renewing IP address with associated MUD file")
+        self.send_dchp_message("request", HAss_IP, byte_mac_addr, hostname, interface_name, MUD_URL)
 
         _LOGGER.debug("MUD URL Exposed!")
+        return
 
-    def mac_to_bytes(self, mac_addr: str) -> bytes:
-        """ Converts a MAC address string to bytes. """
-        return int(mac_addr.replace(":", ""), 16).to_bytes(6, "big")
+        # packet = (
+        #     Ether(dst="ff:ff:ff:ff:ff:ff") /
+        #     IP(src=HAss_IP, dst="255.255.255.255") /
+        #     UDP(sport=68, dport=67) /
+        #     BOOTP(
+        #         chaddr=self.mac_to_bytes(HAss_mac),
+        #         xid=random.randint(1, 2**32-1),  # Random integer required by DHCP
+        #     ) /
+        #     # DHCP(options=[("message-type", "discover"), "end"])
+        #     # DHCP(options=[("message-type", "discover"), ("mud-url", MUD_URL), "end"])
+        #     DHCP(options=[("message-type", "discover"), "end"])
+        # )
+        # print(packet.__str__)
+        # x = sendp(packet, iface="eth0", verbose=True, return_packets=True)
+
+
+    def send_dchp_message(self, message_type, device_IP, byte_mac_addr, hostname, interface_name, mud_url=None, verbose=True):
+        ## MT: discover -> The first message of a DHCP flow -> Can I have a DHCP address?
+        ## MT: request -> The third message of a DHCP flow -> I would like to accept your offer
+        ## MT: release -> I do not want my address anymore
+
+        client_id = bytearray(byte_mac_addr)
+        client_id.insert(0, 1)
+        client_id = bytes(client_id)
+
+        dhcp_options = [("message-type", message_type)]
+        dhcp_options.append(("client_id", client_id))
+        if not message_type == "release":
+            dhcp_options.append(("requested_addr", device_IP))
+        dhcp_options.append(("hostname", hostname))
+        if mud_url:
+            dhcp_options.append(("mud-url", mud_url))
+        dhcp_options.append("end")
+        dhcp_object = DHCP(options=dhcp_options)
+
+        packet = (
+            Ether(dst="ff:ff:ff:ff:ff:ff") /
+            IP(src="0.0.0.0", dst="255.255.255.255") /  # src=device_ip
+            UDP(sport=68, dport=67) /
+            BOOTP(
+                chaddr=byte_mac_addr,
+                xid=random.randint(1, 2**32-1),  # Random integer required by DHCP
+            ) /
+            dhcp_object
+        )
+        _LOGGER.debug("Packet to send:\n %s", packet.__str__)
+        x = sendp(packet, iface=interface_name, verbose=verbose, return_packets=True)
+        return x
+
 
     def print_mud_draft(self):
         """ Printing MUD elements. """
