@@ -18,7 +18,8 @@ from . import constants
 # Validation of the user's configuration
 PLATFORM_SCHEMA = cv.PLATFORM_SCHEMA.extend({
     vol.Optional(CONF_NAME): cv.string,
-    vol.Optional(constants.INTERFACE_KEY): cv.string
+    vol.Optional(constants.INTERFACE_KEY): cv.string,
+    vol.Optional(constants.DEPLOY_KEY): cv.string
 })
 
 _LOGGER = logging.getLogger("mud_generator_button")
@@ -42,6 +43,11 @@ def setup_platform(
     else:
         params[constants.INTERFACE_KEY] = config[constants.INTERFACE_KEY]
 
+    if constants.DEPLOY_KEY not in config.keys():
+        params[constants.DEPLOY_KEY] = constants.DEPLOY_CORE
+    else:
+        params[constants.DEPLOY_KEY] = config[constants.DEPLOY_KEY]
+
     add_entities([MUDGeneratorButton(params)])
     return True
 
@@ -57,7 +63,7 @@ class MUDGeneratorButton(ButtonEntity):
         self._interface = params[constants.INTERFACE_KEY]
         _LOGGER.info('Interface to use <%s>', self._interface)
 
-        self._mud_gen = MUDGenerator()
+        self._mud_gen = MUDGenerator(params[constants.DEPLOY_KEY])
         self._mud_gen.generate_mud_file()
         self._mud_gen.expose_mud_file(self._interface)
 

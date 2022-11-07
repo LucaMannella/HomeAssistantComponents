@@ -19,14 +19,7 @@ _LOGGER = logging.getLogger(__name__)
 # Devcontainer paths
 _CORE_DEFAULT_COMPONENTS_PATH = "./homeassistant/components/"
 _CORE_CUSTOM_COMPONENTS_PATH = "./config/custom_components/"
-_CORE_LOCAL_EXTENTION_PATH = _CORE_CUSTOM_COMPONENTS_PATH+"mud_generator/"
 _CORE_STORAGE_PATH = "./config/www/MUD/"
-
-# HAss OS paths
-_DEFAULT_COMPONENTS_PATH = "/homeassistant/components/"
-_CUSTOM_COMPONENTS_PATH = "/config/custom_components/"
-_LOCAL_EXTENTION_PATH = _CUSTOM_COMPONENTS_PATH+"mud_generator/"
-_STORAGE_PATH = "/config/www/MUD/"
 
 # Filenames
 _DRAFT_FILENAME = "mud_draft.json"
@@ -38,17 +31,30 @@ _KEY_FILENAME = "key.pem"
 
 class MUDGenerator():
     """ This class is able to create and expose a MUD file. """
-    def __init__(self):
+    def __init__(self, deployment: str = c.DEPLOY_CORE):
+        self._deployment = deployment
+        if self._deployment == c.DEPLOY_CORE:
+            self._STORAGE_PATH = _CORE_STORAGE_PATH
+            self._DEFAULT_COMPONENTS_PATH = _CORE_DEFAULT_COMPONENTS_PATH
+            self._CUSTOM_COMPONENTS_PATH = _CORE_CUSTOM_COMPONENTS_PATH
+            self._LOCAL_EXTENTION_PATH = _CORE_CUSTOM_COMPONENTS_PATH+"mud_generator/"
+        else:
+            # HAss OS paths
+            self._STORAGE_PATH = "/config/www/MUD/"
+            self._DEFAULT_COMPONENTS_PATH = "/homeassistant/components/"
+            self._CUSTOM_COMPONENTS_PATH = "/config/custom_components/"
+            self._LOCAL_EXTENTION_PATH = self._CUSTOM_COMPONENTS_PATH+"mud_generator/"
+
         # self._cwd = os.getcwd()
-        with open(_LOCAL_EXTENTION_PATH+_DRAFT_FILENAME, "r", encoding="utf-8") as inputfile:
+        with open(self._LOCAL_EXTENTION_PATH+_DRAFT_FILENAME, "r", encoding="utf-8") as inputfile:
             self._mud_draft = json.load(inputfile)
 
         # Checking if the web server directory exists. If not is created.
-        if not os.path.exists(_STORAGE_PATH):
-            _LOGGER.info("Creating web server folder: <%s>", _STORAGE_PATH)
-            os.makedirs(_STORAGE_PATH)
+        if not os.path.exists(self._STORAGE_PATH):
+            _LOGGER.info("Creating web server folder: <%s>", self._STORAGE_PATH)
+            os.makedirs(self._STORAGE_PATH)
         else:
-            _LOGGER.debug("Web server folder already exists: <%s>", _STORAGE_PATH)
+            _LOGGER.debug("Web server folder already exists: <%s>", self._STORAGE_PATH)
 
     def generate_mud_file(self, sign=True):
         """ This function generates a MUD file starting from a template """
@@ -65,9 +71,10 @@ class MUDGenerator():
         """ This function add ACLs to the MUD file. """
 
         # Iterate over custom components directories
-        assert os.path.isdir(_CUSTOM_COMPONENTS_PATH)
-        for cur_path, dirs, files in os.walk(_CUSTOM_COMPONENTS_PATH):
-            if cur_path == _CUSTOM_COMPONENTS_PATH:
+        _LOGGER.debug("Adding MUD snippets of custom_components...")
+        assert os.path.isdir(self._CUSTOM_COMPONENTS_PATH)
+        for cur_path, dirs, files in os.walk(self._CUSTOM_COMPONENTS_PATH):
+            if cur_path == self._CUSTOM_COMPONENTS_PATH:
                 continue
             elif "__" in cur_path or ".git" in cur_path or DOMAIN in cur_path:
                 continue
@@ -75,22 +82,24 @@ class MUDGenerator():
             if c.MUD_EXTRACT_FILENAME in files:
                 self._join_mud_files(cur_path, files)
 
-        # Iterate over default components directories
-        assert os.path.isdir(_DEFAULT_COMPONENTS_PATH)
-        for cur_path, dirs, files in os.walk(_DEFAULT_COMPONENTS_PATH):
-            if cur_path == _DEFAULT_COMPONENTS_PATH:
-                continue
-            elif "__" in cur_path or ".git" in cur_path:
-                continue
+        # Iterate over default components directories if available
+        if self._deployment == c.DEPLOY_CORE:
+            _LOGGER.debug("Adding MUD snippets of HAss default components...")
+            assert os.path.isdir(self._DEFAULT_COMPONENTS_PATH)
+            for cur_path, dirs, files in os.walk(self._DEFAULT_COMPONENTS_PATH):
+                if cur_path == self._DEFAULT_COMPONENTS_PATH:
+                    continue
+                elif "__" in cur_path or ".git" in cur_path:
+                    continue
 
-            if c.MUD_EXTRACT_FILENAME in files:
-                self._join_mud_files(cur_path, files)
+                if c.MUD_EXTRACT_FILENAME in files:
+                    self._join_mud_files(cur_path, files)
 
     def _join_mud_files(self, cur_path, files):
         """ Looking for the MUD sub-files. """
 
         if c.MUD_EXTRACT_FILENAME in files:
-            _LOGGER.info("MUD information found in %s", cur_path)
+            _LOGGER.info("MUD information found in <%s>", cur_path)
             with open(cur_path+"/"+c.MUD_EXTRACT_FILENAME, "r", encoding="utf-8") as inputfile:
                 mud_extract = json.load(inputfile)
 
@@ -108,16 +117,16 @@ class MUDGenerator():
 
     def _write_mud_file(self, sign=True):
         """ Writing the new MUD file on a JSON file. """
-        local_path_name = _LOCAL_EXTENTION_PATH+_MUD_FILENAME
+        local_path_name = self._LOCAL_EXTENTION_PATH+_MUD_FILENAME
         with open(local_path_name, "w", encoding="utf-8") as outfile:
             json.dump(self._mud_draft, outfile, indent=2)
         _LOGGER.debug("The MUD file has been generated inside the integration folder for debug purposes")
 
         if sign:
             _LOGGER.debug("Signing the MUD file")
-            certificate_path = _LOCAL_EXTENTION_PATH+_CERTIFICATE_FILENAME
-            key_path = _LOCAL_EXTENTION_PATH+_KEY_FILENAME
-            signature_path = _STORAGE_PATH+_SIGNATURE_FILENAME
+            certificate_path = self._LOCAL_EXTENTION_PATH+_CERTIFICATE_FILENAME
+            key_path = self._LOCAL_EXTENTION_PATH+_KEY_FILENAME
+            signature_path = self._STORAGE_PATH+_SIGNATURE_FILENAME
             if not os.path.exists(certificate_path):
                 _LOGGER.debug("X.509 certificate is missing. I am going to create it")
                 # generating certificate
@@ -136,8 +145,8 @@ class MUDGenerator():
             else:
                 _LOGGER.error("MUD file not signed!")
 
-        if os.path.exists(_STORAGE_PATH):
-            shutil.copyfile(local_path_name, _STORAGE_PATH+_MUD_FILENAME)
+        if os.path.exists(self._STORAGE_PATH):
+            shutil.copyfile(local_path_name, self._STORAGE_PATH+_MUD_FILENAME)
             _LOGGER.warning("The MUD file is ready to be exposed!")
         else:
             _LOGGER.critical("There is no webserver folder!")
