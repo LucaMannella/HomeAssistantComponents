@@ -71,6 +71,7 @@ class EmulatedTempSensor(SensorEntity, RestoreEntity):
     ) -> None:
         """Initialize the sensor."""
         self._sensor_name = name
+        self._unique_id = "PoliTo.e-Lite.LM."+self._sensor_name
         self._MIN_TMP: Final[int] = min_temp
         self._MAX_TMP: Final[int] = max_temp
         self._state = None
@@ -87,12 +88,16 @@ class EmulatedTempSensor(SensorEntity, RestoreEntity):
             mantissa = randint(0, 9)
             self._state = float(str(integer) + "." + str(mantissa))
 
-        _LOGGER.info(self._sensor_name + " - initial temperature: " + str(self._state))
+        _LOGGER.info("%s - initial temperature: %s", self._sensor_name, str(self._state))
 
     @property
     def name(self) -> str:
         """Return the name of the sensor."""
         return self._sensor_name
+
+    @property
+    def unique_id(self) -> str | None:
+        return self._unique_id
 
     @property
     def state(self):

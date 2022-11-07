@@ -42,6 +42,7 @@ class MUDGeneratorButton(ButtonEntity):
     def __init__(self, params):
         self._name = params[CONF_NAME]
         _LOGGER.info('Creating %s', self._name)
+        self._unique_id = "PoliTo.e-Lite.LM."+"MUD-generator"
 
         self._mud_gen = MUDGenerator()
         self._mud_gen.generate_mud_file()
@@ -51,6 +52,10 @@ class MUDGeneratorButton(ButtonEntity):
     def name(self):
         """Name of the entity."""
         return self._name
+
+    @property
+    def unique_id(self) -> str | None:
+        return self._unique_id
 
     def press(self) -> None:
         # ToDo: necessary to implement a mechanism for not joining same MUD files

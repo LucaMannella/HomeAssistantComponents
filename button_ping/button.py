@@ -51,6 +51,7 @@ class ButtonPing(ButtonEntity):
     def __init__(self, urls, waiting_time=DEFAULT_WAITING_TIME, ping_number=DEFAULT_PING_NUMBER):
         """Initialize the button."""
         self._name = "Button Ping"
+        self._unique_id = "PoliTo.e-Lite.LM."+self._name
         self._urls: Final[list[str]] = urls
         self._waiting_time: Final[float] = waiting_time
         self._ping_number: Final[float] = ping_number
@@ -62,6 +63,10 @@ class ButtonPing(ButtonEntity):
     def name(self):
         """Name of the entity."""
         return self._name
+
+    @property
+    def unique_id(self) -> str | None:
+        return self._unique_id
 
     def press(self) -> None:
         """Handle the button press."""

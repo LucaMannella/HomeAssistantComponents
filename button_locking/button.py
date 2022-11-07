@@ -47,13 +47,18 @@ class ButtonLocking(ButtonEntity):
 
     def __init__(self, waiting_time=DEFAULT_WAITING_TIME) -> None:
         """Initialize the button."""
+        self._name = "Button Locking"
+        self._unique_id = "PoliTo.e-Lite.LM."+self._name
         self._waiting_time: Final[float] = waiting_time
         _LOGGER.info("Waiting time: %0.3f seconds", self._waiting_time)
 
     @property
     def name(self):
         """Name of the entity."""
-        return "Button Locking"
+        return self._name
+
+    def unique_id(self) -> str | None:
+        return self._unique_id
 
     def press(self) -> None:
         """Handle the button press."""
