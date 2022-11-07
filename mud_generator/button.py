@@ -12,11 +12,13 @@ from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 from homeassistant.components.button import ButtonEntity
 
 from .mud_generator import MUDGenerator
+from . import constants
 
 
 # Validation of the user's configuration
 PLATFORM_SCHEMA = cv.PLATFORM_SCHEMA.extend({
-    vol.Optional(CONF_NAME): cv.string
+    vol.Optional(CONF_NAME): cv.string,
+    vol.Optional(constants.INTERFACE_KEY): cv.string
 })
 
 _LOGGER = logging.getLogger("mud_generator_button")
@@ -30,7 +32,15 @@ def setup_platform(
     """ Set up the MUD Generator platform. """
     _LOGGER.info(pformat(config))
 
-    params = {CONF_NAME: "Regenerate MUD"} #config[CONF_NAME]}
+    if CONF_NAME not in config.keys():
+        params = {CONF_NAME: "Regenerate MUD"}
+    else:
+        params = {CONF_NAME: config[CONF_NAME]}
+
+    if constants.INTERFACE_KEY not in config.keys():
+        params[constants.INTERFACE_KEY] = "eth0"
+    else:
+        params[constants.INTERFACE_KEY] = config[constants.INTERFACE_KEY]
 
     add_entities([MUDGeneratorButton(params)])
     return True
@@ -43,10 +53,13 @@ class MUDGeneratorButton(ButtonEntity):
         self._name = params[CONF_NAME]
         _LOGGER.info('Creating %s', self._name)
         self._unique_id = "PoliTo.e-Lite.LM."+"MUD-generator"
+        _LOGGER.debug("Unique ID: <%s>", self._unique_id)
+        self._interface = params[constants.INTERFACE_KEY]
+        _LOGGER.info('Interface to use <%s>', self._interface)
 
         self._mud_gen = MUDGenerator()
         self._mud_gen.generate_mud_file()
-        self._mud_gen.expose_mud_file()
+        self._mud_gen.expose_mud_file(self._interface)
 
     @property
     def name(self):
@@ -61,4 +74,4 @@ class MUDGeneratorButton(ButtonEntity):
         # ToDo: necessary to implement a mechanism for not joining same MUD files
         self._mud_gen.generate_mud_file()
         # self._mud_gen.print_mud_draft()
-        self._mud_gen.expose_mud_file()
+        self._mud_gen.expose_mud_file(self._interface)

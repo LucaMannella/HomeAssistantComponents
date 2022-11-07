@@ -136,12 +136,12 @@ class MUDGenerator():
             _LOGGER.critical("There is no webserver folder!")
 
 
-    def expose_mud_file(self, mode="DHCP"):
+    def expose_mud_file(self, interface="eth0", mode="DHCP"):
         """ Exposing the MUD file to the MUD manager. """
 
         if mode == "DHCP":
             _LOGGER.debug("Exposing the MUD file through DHCP")
-            self.expose_MUD_file_DHCP()
+            self.expose_MUD_file_DHCP(interface)
         elif mode == "LLDP":
             _LOGGER.debug("Exposing the MUD file through LLDP is not yet implemented")
         elif mode == "802.1AR":
@@ -149,7 +149,7 @@ class MUDGenerator():
         else:
             _LOGGER.error("MUD file not exposed, unrecognized mode!")
 
-    def expose_MUD_file_DHCP(self, interface_name="wlan0"):
+    def expose_MUD_file_DHCP(self, interface="eth0"):  #wlan0
         HAss_mac = gma()
         byte_mac_addr=nu.mac_to_bytes(HAss_mac)
 
@@ -160,15 +160,15 @@ class MUDGenerator():
 
         # _LOGGER.debug("HAss MAC address is: %s", HAss_mac)
         # _LOGGER.debug("HAss IP address is: %s", HAss_IP)
-        _LOGGER.debug("%s --- IP: %s --- MAC address: %s", hostname, HAss_IP, HAss_mac)
+        _LOGGER.debug("Hostname: %s --- Interface: <%s> --- IP: %s --- MAC: %s", hostname, interface, HAss_IP, HAss_mac)
 
         # _LOGGER.debug("Releasing IP address...")
-        # self._send_dchp_message("release", HAss_IP, byte_mac_addr, hostname, interface_name)
+        # self._send_dchp_message("release", HAss_IP, byte_mac_addr, hostname, interface)
 
         MUD_URL = "http://"+HAss_IP+":8123/local/MUD/hass_mud_file.json"
         _LOGGER.debug("Trying to expose the MUD URL: %s", MUD_URL)
         # _LOGGER.debug("Renewing IP address with associated MUD file")
-        self.send_dchp_message("request", HAss_IP, byte_mac_addr, hostname, interface_name, MUD_URL)
+        self.send_dchp_message("request", HAss_IP, byte_mac_addr, hostname, interface, MUD_URL)
 
         _LOGGER.debug("MUD URL Exposed!")
         return
