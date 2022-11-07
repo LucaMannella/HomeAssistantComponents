@@ -12,17 +12,24 @@ import voluptuous as vol
 from scapy.all import Ether, IP, UDP, BOOTP, DHCP, sendp
 import shutil
 
-from . import DOMAIN, util_network as nu
+from . import DOMAIN, constants as c, util_network as nu
 
 _LOGGER = logging.getLogger(__name__)
 
-_DEFAULT_COMPONENTS_PATH = "./homeassistant/components/"
-_CUSTOM_COMPONENTS_PATH = "./config/custom_components/"
-_LOCAL_EXTENTION_PATH = _CUSTOM_COMPONENTS_PATH+"mud_generator/"
-_STORAGE_PATH = "./config/www/MUD/"
-_DRAFT_FILENAME = "mud_draft.json"
-MUD_EXTRACT_FILENAME = "mud_gen.json"
+# Devcontainer paths
+_DEV_DEFAULT_COMPONENTS_PATH = "./homeassistant/components/"
+_DEV_CUSTOM_COMPONENTS_PATH = "./config/custom_components/"
+_DEV_LOCAL_EXTENTION_PATH = _DEV_CUSTOM_COMPONENTS_PATH+"mud_generator/"
+_DEV_STORAGE_PATH = "./config/www/MUD/"
 
+# HAss OS paths
+_DEFAULT_COMPONENTS_PATH = "/homeassistant/components/"
+_CUSTOM_COMPONENTS_PATH = "/config/custom_components/"
+_LOCAL_EXTENTION_PATH = _CUSTOM_COMPONENTS_PATH+"mud_generator/"
+_STORAGE_PATH = "/config/www/MUD/"
+
+# Filenames
+_DRAFT_FILENAME = "mud_draft.json"
 _FILENAME = "hass_mud_file"
 _MUD_FILENAME = _FILENAME+".json"
 _SIGNATURE_FILENAME = _FILENAME+".p7s"
@@ -65,7 +72,7 @@ class MUDGenerator():
             elif "__" in cur_path or ".git" in cur_path or DOMAIN in cur_path:
                 continue
 
-            if MUD_EXTRACT_FILENAME in files:
+            if c.MUD_EXTRACT_FILENAME in files:
                 self._join_mud_files(cur_path, files)
 
         # Iterate over default components directories
@@ -76,15 +83,15 @@ class MUDGenerator():
             elif "__" in cur_path or ".git" in cur_path:
                 continue
 
-            if MUD_EXTRACT_FILENAME in files:
+            if c.MUD_EXTRACT_FILENAME in files:
                 self._join_mud_files(cur_path, files)
 
     def _join_mud_files(self, cur_path, files):
         """ Looking for the MUD sub-files. """
 
-        if MUD_EXTRACT_FILENAME in files:
+        if c.MUD_EXTRACT_FILENAME in files:
             _LOGGER.info("MUD information found in %s", cur_path)
-            with open(cur_path+"/"+MUD_EXTRACT_FILENAME, "r", encoding="utf-8") as inputfile:
+            with open(cur_path+"/"+c.MUD_EXTRACT_FILENAME, "r", encoding="utf-8") as inputfile:
                 mud_extract = json.load(inputfile)
 
                 from_policy = mud_extract["ietf-mud:mud"]["from-device-policy"]["access-lists"]["access-list"]
@@ -101,16 +108,16 @@ class MUDGenerator():
 
     def _write_mud_file(self, sign=True):
         """ Writing the new MUD file on a JSON file. """
-        local_path_name = _LOCAL_EXTENTION_PATH+_MUD_FILENAME
+        local_path_name = _DEV_LOCAL_EXTENTION_PATH+_MUD_FILENAME
         with open(local_path_name, "w", encoding="utf-8") as outfile:
             json.dump(self._mud_draft, outfile, indent=2)
         _LOGGER.debug("The MUD file has been generated inside the integration folder for debug purposes")
 
         if sign:
             _LOGGER.debug("Signing the MUD file")
-            certificate_path = _LOCAL_EXTENTION_PATH+_CERTIFICATE_FILENAME
-            key_path = _LOCAL_EXTENTION_PATH+_KEY_FILENAME
-            signature_path = _STORAGE_PATH+_SIGNATURE_FILENAME
+            certificate_path = _DEV_LOCAL_EXTENTION_PATH+_CERTIFICATE_FILENAME
+            key_path = _DEV_LOCAL_EXTENTION_PATH+_KEY_FILENAME
+            signature_path = _DEV_STORAGE_PATH+_SIGNATURE_FILENAME
             if not os.path.exists(certificate_path):
                 _LOGGER.debug("X.509 certificate is missing. I am going to create it")
                 # generating certificate
@@ -129,8 +136,8 @@ class MUDGenerator():
             else:
                 _LOGGER.error("MUD file not signed!")
 
-        if os.path.exists(_STORAGE_PATH):
-            shutil.copyfile(local_path_name, _STORAGE_PATH+_MUD_FILENAME)
+        if os.path.exists(_DEV_STORAGE_PATH):
+            shutil.copyfile(local_path_name, _DEV_STORAGE_PATH+_MUD_FILENAME)
             _LOGGER.warning("The MUD file is ready to be exposed!")
         else:
             _LOGGER.critical("There is no webserver folder!")
