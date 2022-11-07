@@ -36,6 +36,13 @@ class MUDGenerator():
         with open(_LOCAL_EXTENTION_PATH+_DRAFT_FILENAME, "r", encoding="utf-8") as inputfile:
             self._mud_draft = json.load(inputfile)
 
+        # Checking if the web server directory exists. If not is created.
+        if not os.path.exists(_STORAGE_PATH):
+            _LOGGER.info("Creating web server folder: <%s>", _STORAGE_PATH)
+            os.makedirs(_STORAGE_PATH)
+        else:
+            _LOGGER.debug("Web server folder already exists: <%s>", _STORAGE_PATH)
+
     def generate_mud_file(self, sign=True):
         """ This function generates a MUD file starting from a template """
         self._add_fields()
@@ -122,9 +129,11 @@ class MUDGenerator():
             else:
                 _LOGGER.error("MUD file not signed!")
 
-        # ToDo: it is necessary to create the folder in advance
-        shutil.copyfile(local_path_name, _STORAGE_PATH+_MUD_FILENAME)
-        _LOGGER.warning("The MUD file is ready to be exposed!")
+        if os.path.exists(_STORAGE_PATH):
+            shutil.copyfile(local_path_name, _STORAGE_PATH+_MUD_FILENAME)
+            _LOGGER.warning("The MUD file is ready to be exposed!")
+        else:
+            _LOGGER.critical("There is no webserver folder!")
 
 
     def expose_mud_file(self, mode="DHCP"):

@@ -59,6 +59,6 @@ class MUDGeneratorButton(ButtonEntity):
 
     def press(self) -> None:
         # ToDo: necessary to implement a mechanism for not joining same MUD files
-        # self._mud_gen.generate_mud_file()
+        self._mud_gen.generate_mud_file()
         # self._mud_gen.print_mud_draft()
         self._mud_gen.expose_mud_file()
