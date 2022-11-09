@@ -150,4 +150,6 @@ cython_debug/
 # Aggiunte personali
 mud_generator/hass_mud_file.json
 mud_generator/*.pem
+mud_generator/*.p7s
+mud_generator/extra/backup/
 hello*

@@ -16,7 +16,7 @@ from . import DOMAIN, constants as c, util_network as nu
 
 _LOGGER = logging.getLogger(__name__)
 
-# Devcontainer paths
+# Core paths (e.g., in Devcontainer)
 _CORE_DEFAULT_COMPONENTS_PATH = "./homeassistant/components/"
 _CORE_CUSTOM_COMPONENTS_PATH = "./config/custom_components/"
 _CORE_STORAGE_PATH = "./config/www/MUD/"
@@ -117,8 +117,8 @@ class MUDGenerator():
 
     def _write_mud_file(self, sign=True):
         """ Writing the new MUD file on a JSON file. """
-        local_path_name = self._LOCAL_EXTENTION_PATH+_MUD_FILENAME
-        with open(local_path_name, "w", encoding="utf-8") as outfile:
+        integration_mud_path = self._LOCAL_EXTENTION_PATH+_MUD_FILENAME
+        with open(integration_mud_path, "w", encoding="utf-8") as outfile:
             json.dump(self._mud_draft, outfile, indent=2)
         _LOGGER.debug("The MUD file has been generated inside the integration folder for debug purposes")
 
@@ -126,27 +126,32 @@ class MUDGenerator():
             _LOGGER.debug("Signing the MUD file")
             certificate_path = self._LOCAL_EXTENTION_PATH+_CERTIFICATE_FILENAME
             key_path = self._LOCAL_EXTENTION_PATH+_KEY_FILENAME
-            signature_path = self._STORAGE_PATH+_SIGNATURE_FILENAME
-            if not os.path.exists(certificate_path):
-                _LOGGER.debug("X.509 certificate is missing. I am going to create it")
+
+            if not os.path.exists(certificate_path) or not os.path.exists(key_path):
+                _LOGGER.debug("Missing X.509 certificate (or private key). Creating right now!")
                 # generating certificate
                 cert_command = 'openssl req -x509 -newkey rsa:4096 -sha256 -days 3650 -nodes -keyout '+key_path+' -out '+certificate_path+' -subj "/CN=HomeAssistantMUDIntegration"'
                 ok = os.system(cert_command)
                 if ok == 0:
-                    _LOGGER.debug("Certificiate succesfully generated!")
+                    _LOGGER.debug("Certificate succesfully generated!")
                 else:
                     _LOGGER.critical("Certificate not generated, will be impossible to sign the MUD file!")
 
-            # Signing the generated MUD file
-            sign_command = "openssl cms -sign -signer "+certificate_path+" -inkey "+key_path+" -in "+local_path_name+" -binary -outform DER -binary -out "+signature_path
-            ok = os.system(sign_command)
-            if ok == 0:
-                _LOGGER.debug("MUD file signed")
-            else:
-                _LOGGER.error("MUD file not signed!")
+            # Signing the generated MUD file (if the certificate is available)
+            if os.path.exists(certificate_path) and os.path.exists(key_path):
+                integration_signature_path = self._LOCAL_EXTENTION_PATH+_SIGNATURE_FILENAME
+                sign_command = "openssl cms -sign -signer "+certificate_path+" -inkey "+key_path+" -in "+integration_mud_path+" -binary -outform DER -out "+integration_signature_path
+                ok = os.system(sign_command)
+                if ok == 0:
+                    _LOGGER.debug("MUD file signed")
+                    signature_storage_path = self._STORAGE_PATH+_SIGNATURE_FILENAME
+                    shutil.copyfile(integration_signature_path, signature_storage_path)
+                else:
+                    _LOGGER.error("MUD file not signed!")
 
         if os.path.exists(self._STORAGE_PATH):
-            shutil.copyfile(local_path_name, self._STORAGE_PATH+_MUD_FILENAME)
+            mud_storage_path = self._STORAGE_PATH+_MUD_FILENAME
+            shutil.copyfile(integration_mud_path, mud_storage_path)
             _LOGGER.warning("The MUD file is ready to be exposed!")
         else:
             _LOGGER.critical("There is no webserver folder!")
