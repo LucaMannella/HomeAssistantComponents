@@ -44,6 +44,10 @@ class MUDGenerator():
             self._DEFAULT_COMPONENTS_PATH = "/homeassistant/components/"
             self._CUSTOM_COMPONENTS_PATH = "/config/custom_components/"
             self._LOCAL_EXTENTION_PATH = self._CUSTOM_COMPONENTS_PATH+"mud_generator/"
+            # Installing openSSL on HAss OS
+            ok = os.system("apk add openssl")
+            if not ok:
+                _LOGGER.critical("Impossible to install OpenSSL")
 
         # self._cwd = os.getcwd()
         with open(self._LOCAL_EXTENTION_PATH+_DRAFT_FILENAME, "r", encoding="utf-8") as inputfile:
