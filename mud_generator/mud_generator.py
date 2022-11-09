@@ -92,7 +92,7 @@ class MUDGenerator():
 
             if c.MUD_EXTRACT_FILENAME in files:
                 inserted_rules = self._join_mud_files(cur_path, files)
-                logging.debug("%d rules were added to the MUD file", inserted_rules)
+                _LOGGER.debug("%d rules were added to the MUD file", inserted_rules)
                 total_inserted_rules += inserted_rules
 
         # Iterate over default components directories if available
@@ -107,10 +107,10 @@ class MUDGenerator():
 
                 if c.MUD_EXTRACT_FILENAME in files:
                     inserted_rules = self._join_mud_files(cur_path, files)
-                    logging.debug("%d rules were added to the MUD file", inserted_rules)
+                    _LOGGER.debug("%d rules were added to the MUD file", inserted_rules)
                     total_inserted_rules += inserted_rules
 
-        logging.info("%d rules were inserted in the generated MUD file", total_inserted_rules)
+        _LOGGER.info("%d rules were inserted in the generated MUD file", total_inserted_rules)
         return total_inserted_rules
 
     def _join_mud_files(self, cur_path, files) -> int:
