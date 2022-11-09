@@ -49,9 +49,7 @@ class MUDGenerator():
             if not ok:
                 _LOGGER.critical("Impossible to install OpenSSL")
 
-        # self._cwd = os.getcwd()
-        with open(self._LOCAL_EXTENTION_PATH+_DRAFT_FILENAME, "r", encoding="utf-8") as inputfile:
-            self._mud_draft = json.load(inputfile)
+        self._mud_draft = self._load_mud_draft()
 
         # Checking if the web server directory exists. If not is created.
         if not os.path.exists(self._STORAGE_PATH):
@@ -65,6 +63,14 @@ class MUDGenerator():
         self._add_fields()
         self._write_mud_file(sign)
 
+
+    def _load_mud_draft(self) -> dict:
+        draft = None
+        # self._cwd = os.getcwd()
+        with open(self._LOCAL_EXTENTION_PATH+_DRAFT_FILENAME, "r", encoding="utf-8") as inputfile:
+            draft = json.load(inputfile)
+        return draft
+
     def _add_fields(self):
         """ This function adds the additional requried parameters to the generated MUD file"""
         # mud_draft["mud-url"] = "http://iot-device.example.com/dnsname"
@@ -75,6 +81,7 @@ class MUDGenerator():
         """ This function add ACLs to the MUD file. """
 
         # Iterate over custom components directories
+        total_inserted_rules = 0
         _LOGGER.debug("Adding MUD snippets of custom_components...")
         assert os.path.isdir(self._CUSTOM_COMPONENTS_PATH)
         for cur_path, dirs, files in os.walk(self._CUSTOM_COMPONENTS_PATH):
@@ -84,7 +91,9 @@ class MUDGenerator():
                 continue
 
             if c.MUD_EXTRACT_FILENAME in files:
-                self._join_mud_files(cur_path, files)
+                inserted_rules = self._join_mud_files(cur_path, files)
+                logging.debug("%d rules were added to the MUD file", inserted_rules)
+                total_inserted_rules += inserted_rules
 
         # Iterate over default components directories if available
         if self._deployment == c.DEPLOY_CORE:
@@ -97,27 +106,56 @@ class MUDGenerator():
                     continue
 
                 if c.MUD_EXTRACT_FILENAME in files:
-                    self._join_mud_files(cur_path, files)
+                    inserted_rules = self._join_mud_files(cur_path, files)
+                    logging.debug("%d rules were added to the MUD file", inserted_rules)
+                    total_inserted_rules += inserted_rules
 
-    def _join_mud_files(self, cur_path, files):
+        logging.info("%d rules were inserted in the generated MUD file", total_inserted_rules)
+        return total_inserted_rules
+
+    def _join_mud_files(self, cur_path, files) -> int:
         """ Looking for the MUD sub-files. """
+        inserted_rules = 0
 
         if c.MUD_EXTRACT_FILENAME in files:
             _LOGGER.info("MUD information found in <%s>", cur_path)
             with open(cur_path+"/"+c.MUD_EXTRACT_FILENAME, "r", encoding="utf-8") as inputfile:
                 mud_extract = json.load(inputfile)
 
-                from_policy = mud_extract["ietf-mud:mud"]["from-device-policy"]["access-lists"]["access-list"]
-                self._mud_draft["ietf-mud:mud"]["from-device-policy"]["access-lists"]["access-list"] += from_policy
+                old_from_policies = self._mud_draft["ietf-mud:mud"]["from-device-policy"]["access-lists"]["access-list"]
+                new_from_policies = mud_extract["ietf-mud:mud"]["from-device-policy"]["access-lists"]["access-list"]
+                from_count = self._add_policies_if_not_exist(old_from_policies, new_from_policies, self._mud_draft["ietf-mud:mud"]["from-device-policy"]["access-lists"]["access-list"])
 
-                to_policy = mud_extract["ietf-mud:mud"]["to-device-policy"]["access-lists"]["access-list"]
-                self._mud_draft["ietf-mud:mud"]["to-device-policy"]["access-lists"]["access-list"] += to_policy
+                old_to_policy = self._mud_draft["ietf-mud:mud"]["to-device-policy"]["access-lists"]["access-list"]
+                new_to_policy = mud_extract["ietf-mud:mud"]["to-device-policy"]["access-lists"]["access-list"]
+                to_count = self._add_policies_if_not_exist(old_to_policy, new_to_policy, self._mud_draft["ietf-mud:mud"]["to-device-policy"]["access-lists"]["access-list"])
 
-                acls = mud_extract["ietf-access-control-list:acls"]["acl"]
-                self._mud_draft["ietf-access-control-list:acls"]["acl"] += acls
+                old_acls = self._mud_draft["ietf-access-control-list:acls"]["acl"]
+                new_acls = mud_extract["ietf-access-control-list:acls"]["acl"]
+                acl_count = self._add_policies_if_not_exist(old_acls, new_acls, self._mud_draft["ietf-access-control-list:acls"]["acl"])
+
+                if (from_count+to_count) != acl_count:
+                    _LOGGER.warning("The added snippet is inconsistent!")
+                inserted_rules += acl_count
         # else:
         #    _LOGGER.debug("No MUD details in %s", cur_path)
 
+        return inserted_rules
+
+    def _add_policies_if_not_exist(self, old_policies, new_policies, target):
+        """ This method adds the <new_policies> inside <target> if they do not exist in <old_policies>.
+            To verify the existence only the field name is checked. """
+        count = 0
+        exist = False
+        for new_pol in new_policies:
+            for old_pol in old_policies:
+                if new_pol["name"] == old_pol["name"]:
+                    exist = True
+                    break
+            if not exist:
+                target.append({"name": new_pol["name"]})
+                count += 1
+        return count
 
     def _write_mud_file(self, sign=True):
         """ Writing the new MUD file on a JSON file. """
