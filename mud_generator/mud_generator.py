@@ -44,9 +44,9 @@ class MUDGenerator():
             self._DEFAULT_COMPONENTS_PATH = "/homeassistant/components/"
             self._CUSTOM_COMPONENTS_PATH = "/config/custom_components/"
             self._LOCAL_EXTENTION_PATH = self._CUSTOM_COMPONENTS_PATH+"mud_generator/"
-            # Installing openSSL on HAss OS
-            ok = os.system("apk add openssl")
-            if not ok:
+            # Installing openSSL on HAss OS --> maybe this command could not be given in HAss
+            installed = os.system("apk add openssl")
+            if not installed:
                 _LOGGER.critical("Impossible to install OpenSSL")
 
         self._mud_draft = self._load_mud_draft()
@@ -92,7 +92,7 @@ class MUDGenerator():
 
             if c.MUD_EXTRACT_FILENAME in files:
                 inserted_rules = self._join_mud_files(cur_path, files)
-                _LOGGER.debug("%d rules were added to the MUD file", inserted_rules)
+                _LOGGER.debug("<%s> adds %d rules to the MUD file", cur_path, inserted_rules)
                 total_inserted_rules += inserted_rules
 
         # Iterate over default components directories if available
@@ -132,7 +132,7 @@ class MUDGenerator():
 
                 old_acls = self._mud_draft["ietf-access-control-list:acls"]["acl"]
                 new_acls = mud_extract["ietf-access-control-list:acls"]["acl"]
-                acl_count = self._add_policies_if_not_exist(old_acls, new_acls, self._mud_draft["ietf-access-control-list:acls"]["acl"])
+                acl_count = self._add_acls_if_not_exist(old_acls, new_acls, self._mud_draft["ietf-access-control-list:acls"]["acl"])
 
                 if (from_count+to_count) != acl_count:
                     _LOGGER.warning("The added snippet is inconsistent!")
@@ -154,6 +154,21 @@ class MUDGenerator():
                     break
             if not exist:
                 target.append({"name": new_pol["name"]})
+                count += 1
+        return count
+
+    def _add_acls_if_not_exist(self, old_acls, new_acls, target):
+        """ This method adds the <new_acls> inside <target> if they do not exist in <old_acls>.
+            To verify the existence only the field name is checked. """
+        count = 0
+        exist = False
+        for new_acl in new_acls:
+            for old_acl in old_acls:
+                if new_acl["name"] == old_acl["name"]:
+                    exist = True
+                    break
+            if not exist:
+                target.append(new_acl)
                 count += 1
         return count
 
@@ -237,19 +252,11 @@ class MUDGenerator():
         return
 
         # packet = (
-        #     Ether(dst="ff:ff:ff:ff:ff:ff") /
-        #     IP(src=HAss_IP, dst="255.255.255.255") /
-        #     UDP(sport=68, dport=67) /
-        #     BOOTP(
-        #         chaddr=self.mac_to_bytes(HAss_mac),
-        #         xid=random.randint(1, 2**32-1),  # Random integer required by DHCP
-        #     ) /
-        #     # DHCP(options=[("message-type", "discover"), "end"])
+        #     Ether(dst="ff:ff:ff:ff:ff:ff")   IP(src=HAss_IP, dst="255.255.255.255")   UDP(sport=68, dport=67) /
+        #     BOOTP( chaddr=self.mac_to_bytes(HAss_mac), xid=random.randint(1, 2**32-1), ) /
         #     # DHCP(options=[("message-type", "discover"), ("mud-url", MUD_URL), "end"])
         #     DHCP(options=[("message-type", "discover"), "end"])
         # )
-        # print(packet.__str__)
-        # x = sendp(packet, iface="eth0", verbose=True, return_packets=True)
 
 
     def send_dchp_message(self, message_type, device_IP, byte_mac_addr, hostname, interface_name, mud_url=None, verbose=True):
