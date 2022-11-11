@@ -49,7 +49,7 @@ class MUDGenerator():
             if not installed:
                 _LOGGER.critical("Impossible to install OpenSSL")
 
-        self._mud_draft = self._load_mud_draft()
+        self._mud_draft = {}
 
         # Checking if the web server directory exists. If not is created.
         if not os.path.exists(self._STORAGE_PATH):
@@ -60,8 +60,27 @@ class MUDGenerator():
 
     def generate_mud_file(self, sign=True):
         """ This function generates a MUD file starting from a template """
-        self._add_fields()
-        self._write_mud_file(sign)
+        self._mud_draft = self._load_mud_draft()  # (Re)loading original draft
+        self._add_mud_rules()
+
+        mud_file = self._LOCAL_EXTENTION_PATH+_MUD_FILENAME
+        if not os.path.exists(mud_file):
+            mud_changed = True
+        else:
+            with open(mud_file, "r", encoding="utf-8") as inputfile:
+                old_mud = json.load(inputfile)
+                del old_mud["ietf-mud:mud"]["last-update"]
+                if self._mud_draft == old_mud:
+                    mud_changed = False
+                else:
+                    mud_changed = True
+
+        if mud_changed:
+            # mud_draft["mud-url"] = "http://iot-device.example.com/dnsname"
+            self._mud_draft["ietf-mud:mud"]["last-update"] = datetime.now().isoformat(timespec="seconds")
+            self._write_mud_file(sign)
+        else:
+            _LOGGER.debug("MUD file was not changed!")
 
 
     def _load_mud_draft(self) -> dict:
@@ -70,12 +89,6 @@ class MUDGenerator():
         with open(self._LOCAL_EXTENTION_PATH+_DRAFT_FILENAME, "r", encoding="utf-8") as inputfile:
             draft = json.load(inputfile)
         return draft
-
-    def _add_fields(self):
-        """ This function adds the additional requried parameters to the generated MUD file"""
-        # mud_draft["mud-url"] = "http://iot-device.example.com/dnsname"
-        self._mud_draft["ietf-mud:mud"]["last-update"] = datetime.now().isoformat(timespec="seconds")
-        self._add_mud_rules()
 
     def _add_mud_rules(self):
         """ This function add ACLs to the MUD file. """
@@ -187,7 +200,7 @@ class MUDGenerator():
             if not os.path.exists(certificate_path) or not os.path.exists(key_path):
                 _LOGGER.debug("Missing X.509 certificate (or private key). Creating right now!")
                 # generating certificate
-                cert_command = 'openssl req -x509 -newkey rsa:4096 -sha256 -days 3650 -nodes -keyout '+key_path+' -out '+certificate_path+' -subj "/CN=HomeAssistantMUDIntegration"'
+                cert_command = 'openssl req -x509 -newkey rsa:4096 -sha256 -days 3650 -nodes -keyout '+key_path+' -out '+certificate_path+' -subj "/CN=HAss-MUD Integration"'
                 ok = os.system(cert_command)
                 if ok == 0:
                     _LOGGER.debug("Certificate succesfully generated!")
