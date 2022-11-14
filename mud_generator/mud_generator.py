@@ -58,10 +58,10 @@ class MUDGenerator():
         else:
             _LOGGER.debug("Web server folder already exists: <%s>", self._STORAGE_PATH)
 
-    def generate_mud_file(self, sign=True):
+    def generate_mud_file(self, integration_list:dict=None, sign:bool=True):
         """ This function generates a MUD file starting from a template """
         self._mud_draft = self._load_mud_draft()  # (Re)loading original draft
-        self._add_mud_rules()
+        self._add_mud_rules(integration_list)
 
         mud_file = self._LOCAL_EXTENTION_PATH+_MUD_FILENAME
         if not os.path.exists(mud_file):
@@ -90,11 +90,22 @@ class MUDGenerator():
             draft = json.load(inputfile)
         return draft
 
-    def _add_mud_rules(self):
-        """ This function add ACLs to the MUD file. """
+    def _add_mud_rules(self, integration_list:dict=None):
+        """ Adding the ACLs to the MUD object. """
+        if integration_list:
+            self._add_rules_from_manifest(integration_list)
+        self._add_rules_from_folders()
+
+    def _add_rules_from_manifest(self, integration_list:dict):
+        """ This method adds MUD snippets retrieving references from the manifest. """
+        pass
+
+    def _add_rules_from_folders(self):
+        """ This method takes the MUD snippets crossing integration folders. """
 
         # Iterate over custom components directories
         total_inserted_rules = 0
+
         _LOGGER.debug("Adding MUD snippets of custom_components...")
         assert os.path.isdir(self._CUSTOM_COMPONENTS_PATH)
         for cur_path, dirs, files in os.walk(self._CUSTOM_COMPONENTS_PATH):

@@ -78,6 +78,10 @@ class MUDGeneratorButton(ButtonEntity):
 
     def press(self) -> None:
         # ToDo: necessary to implement a mechanism for not joining same MUD files
-        self._mud_gen.generate_mud_file()
+        if not self.hass:
+            _LOGGER.warning("Variable <hass> is not accessible now!")
+            self._mud_gen.generate_mud_file()
+        else:
+            self._mud_gen.generate_mud_file(self.hass.data["integrations"])
         # self._mud_gen.print_mud_draft()
         self._mud_gen.expose_mud_file(self._interface)
