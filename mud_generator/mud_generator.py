@@ -61,15 +61,17 @@ class MUDGenerator():
     def generate_mud_file(self, integration_list:dict=None, sign:bool=True):
         """ This function generates a MUD file starting from a template """
         self._mud_draft = self._load_mud_draft()  # (Re)loading original draft
-        self._add_mud_rules(integration_list)
+        inserted_rules = self._add_mud_rules(integration_list)
 
-        mud_file = self._LOCAL_EXTENTION_PATH+_MUD_FILENAME
-        if not os.path.exists(mud_file):
+        mud_file_path = self._LOCAL_EXTENTION_PATH+_MUD_FILENAME
+        if not os.path.exists(mud_file_path):
             mud_changed = True
         else:
-            with open(mud_file, "r", encoding="utf-8") as inputfile:
+            with open(mud_file_path, "r", encoding="utf-8") as inputfile:
                 old_mud = json.load(inputfile)
-                del old_mud["ietf-mud:mud"]["last-update"]
+                if "last-update" in old_mud["ietf-mud:mud"]:  # removing last-update timestamp if exists
+                    del old_mud["ietf-mud:mud"]["last-update"]
+
                 if self._mud_draft == old_mud:
                     mud_changed = False
                 else:
@@ -90,22 +92,38 @@ class MUDGenerator():
             draft = json.load(inputfile)
         return draft
 
-    def _add_mud_rules(self, integration_list:dict=None):
+    def _add_mud_rules(self, integration_list:dict=None) -> int:
         """ Adding the ACLs to the MUD object. """
+        inserted_rules = 0
         if integration_list:
-            self._add_rules_from_manifest(integration_list)
-        self._add_rules_from_folders()
+            inserted_rules += self._add_rules_from_manifest(integration_list)
+        inserted_rules += self._add_rules_from_folders()
+        _LOGGER.info("Total rules inserted in the MUD file: %d", inserted_rules)
+        return inserted_rules
 
     def _add_rules_from_manifest(self, integration_list:dict):
         """ This method adds MUD snippets retrieving references from the manifest. """
-        pass
+        total_inserted_rules = 0
+        for integration_name, integration_object in integration_list.items():
+            manifest = integration_object.manifest
+            if "mud_file" in manifest:
+                mud_snippet = manifest["mud_file"]
+                if mud_snippet.lower().startswith("http"):
+                    _LOGGER.warning("This MUD is remotely stored... Not yet implemented!")
+                else:
+                    _LOGGER.debug("MUD snippet of <%s> is stored <%s>", integration_name, mud_snippet)
+                    snippet_path = integration_object.file_path / mud_snippet  # adding to POSIX path
+                    inserted_rules = self._add_rules_to_draft(snippet_path)
+                    _LOGGER.debug("<%s> adds %d rules to the MUD file", integration_name, inserted_rules)
+                    total_inserted_rules += inserted_rules
+        return total_inserted_rules
 
     def _add_rules_from_folders(self):
         """ This method takes the MUD snippets crossing integration folders. """
 
-        # Iterate over custom components directories
         total_inserted_rules = 0
 
+        # Iterate over custom components directories
         _LOGGER.debug("Adding MUD snippets of custom_components...")
         assert os.path.isdir(self._CUSTOM_COMPONENTS_PATH)
         for cur_path, dirs, files in os.walk(self._CUSTOM_COMPONENTS_PATH):
@@ -115,13 +133,15 @@ class MUDGenerator():
                 continue
 
             if c.MUD_EXTRACT_FILENAME in files:
-                inserted_rules = self._join_mud_files(cur_path, files)
+                _LOGGER.info("MUD information found in <%s>", cur_path)
+                snippet_path = cur_path+"/"+c.MUD_EXTRACT_FILENAME
+                inserted_rules = self._add_rules_to_draft(snippet_path)
                 _LOGGER.debug("<%s> adds %d rules to the MUD file", cur_path, inserted_rules)
                 total_inserted_rules += inserted_rules
 
         # Iterate over default components directories if available
         if self._deployment == c.DEPLOY_CORE:
-            _LOGGER.debug("Adding MUD snippets of HAss default components...")
+            _LOGGER.debug("Adding MUD snippets of default integrations...")
             assert os.path.isdir(self._DEFAULT_COMPONENTS_PATH)
             for cur_path, dirs, files in os.walk(self._DEFAULT_COMPONENTS_PATH):
                 if cur_path == self._DEFAULT_COMPONENTS_PATH:
@@ -130,40 +150,37 @@ class MUDGenerator():
                     continue
 
                 if c.MUD_EXTRACT_FILENAME in files:
-                    inserted_rules = self._join_mud_files(cur_path, files)
-                    _LOGGER.debug("%d rules were added to the MUD file", inserted_rules)
+                    _LOGGER.info("MUD information found in <%s>", cur_path)
+                    snippet_path = cur_path+"/"+c.MUD_EXTRACT_FILENAME
+                    inserted_rules = self._add_rules_to_draft(snippet_path)
+                    _LOGGER.debug("<%s> adds %d rules to the MUD file", cur_path, inserted_rules)
                     total_inserted_rules += inserted_rules
 
         _LOGGER.info("%d rules were inserted in the generated MUD file", total_inserted_rules)
         return total_inserted_rules
 
-    def _join_mud_files(self, cur_path, files) -> int:
-        """ Looking for the MUD sub-files. """
+    def _add_rules_to_draft(self, snippet_path) -> int:
         inserted_rules = 0
+        with open(snippet_path, "r", encoding="utf-8") as inputfile:
+            mud_extract = json.load(inputfile)
 
-        if c.MUD_EXTRACT_FILENAME in files:
-            _LOGGER.info("MUD information found in <%s>", cur_path)
-            with open(cur_path+"/"+c.MUD_EXTRACT_FILENAME, "r", encoding="utf-8") as inputfile:
-                mud_extract = json.load(inputfile)
+            old_from_policies = self._mud_draft["ietf-mud:mud"]["from-device-policy"]["access-lists"]["access-list"]
+            new_from_policies = mud_extract["ietf-mud:mud"]["from-device-policy"]["access-lists"]["access-list"]
+            from_count = self._add_policies_if_not_exist(old_from_policies, new_from_policies, self._mud_draft["ietf-mud:mud"]["from-device-policy"]["access-lists"]["access-list"])
 
-                old_from_policies = self._mud_draft["ietf-mud:mud"]["from-device-policy"]["access-lists"]["access-list"]
-                new_from_policies = mud_extract["ietf-mud:mud"]["from-device-policy"]["access-lists"]["access-list"]
-                from_count = self._add_policies_if_not_exist(old_from_policies, new_from_policies, self._mud_draft["ietf-mud:mud"]["from-device-policy"]["access-lists"]["access-list"])
+            old_to_policy = self._mud_draft["ietf-mud:mud"]["to-device-policy"]["access-lists"]["access-list"]
+            new_to_policy = mud_extract["ietf-mud:mud"]["to-device-policy"]["access-lists"]["access-list"]
+            to_count = self._add_policies_if_not_exist(old_to_policy, new_to_policy, self._mud_draft["ietf-mud:mud"]["to-device-policy"]["access-lists"]["access-list"])
 
-                old_to_policy = self._mud_draft["ietf-mud:mud"]["to-device-policy"]["access-lists"]["access-list"]
-                new_to_policy = mud_extract["ietf-mud:mud"]["to-device-policy"]["access-lists"]["access-list"]
-                to_count = self._add_policies_if_not_exist(old_to_policy, new_to_policy, self._mud_draft["ietf-mud:mud"]["to-device-policy"]["access-lists"]["access-list"])
+            old_acls = self._mud_draft["ietf-access-control-list:acls"]["acl"]
+            new_acls = mud_extract["ietf-access-control-list:acls"]["acl"]
+            acl_count = self._add_acls_if_not_exist(old_acls, new_acls, self._mud_draft["ietf-access-control-list:acls"]["acl"])
 
-                old_acls = self._mud_draft["ietf-access-control-list:acls"]["acl"]
-                new_acls = mud_extract["ietf-access-control-list:acls"]["acl"]
-                acl_count = self._add_acls_if_not_exist(old_acls, new_acls, self._mud_draft["ietf-access-control-list:acls"]["acl"])
-
-                if (from_count+to_count) != acl_count:
-                    _LOGGER.warning("The added snippet is inconsistent!")
-                inserted_rules += acl_count
-        # else:
-        #    _LOGGER.debug("No MUD details in %s", cur_path)
-
+            if (from_count+to_count) != acl_count:
+                _LOGGER.warning("The added snippet is inconsistent!")
+                inserted_rules = -1
+            else:
+                inserted_rules = acl_count
         return inserted_rules
 
     def _add_policies_if_not_exist(self, old_policies, new_policies, target):
