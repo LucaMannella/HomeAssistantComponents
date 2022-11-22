@@ -18,6 +18,15 @@ DOMAIN = "switch_remote"
 
 UPDATE_STATUS = GET_LAST_STATUS = "/api/switches/1"
 
+""" To work properly this integration needs to have a configured "scan_interval".
+    Every x seconds the update() function is called fetching the remote value from the server.
+
+    switch:
+    - platform: switch_remote
+      scan_interval: 300  // number of seconds that will trigger an update
+      url: localhost      // "host.docker.internal" if the integration is running in a container
+"""
+
 _LOGGER = logging.getLogger(__name__)
 
 def setup_platform(
@@ -99,3 +108,17 @@ class SwitchRemote(SwitchEntity):
         else:
             _LOGGER.error("Error storing temperature: %s", response.json()["error"])
             return False
+
+    def update(self) -> None:
+        """Fetch new state data for the sensor.
+
+        This is the only method that should fetch new data for Home Assistant.
+        """
+        remote_value = self._get_remote_value()
+        if remote_value == None:
+            _LOGGER.error("Impossible to retrieve remote status!")
+        else:
+            if remote_value != self._attr_is_on:
+                _LOGGER.info("New value <%s> fetched from <%s>", remote_value, self._url)
+                self._attr_is_on = remote_value
+
