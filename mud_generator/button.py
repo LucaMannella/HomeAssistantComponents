@@ -10,6 +10,7 @@ from homeassistant.const import CONF_NAME
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 from homeassistant.components.button import ButtonEntity
+from homeassistant.components.sensor import SensorEntity
 
 from .mud_generator import MUDGenerator
 from . import constants
@@ -34,7 +35,7 @@ def setup_platform(
     _LOGGER.info(pformat(config))
 
     if CONF_NAME not in config.keys():
-        params = {CONF_NAME: "Regenerate MUD"}
+        params = {CONF_NAME: "Home Assistant MUD Integration"}
     else:
         params = {CONF_NAME: config[CONF_NAME]}
 
@@ -83,5 +84,12 @@ class MUDGeneratorButton(ButtonEntity):
         else:
             integration_list = self.hass.data["integrations"]
             self._mud_gen.generate_mud_file(integration_list)
-        # self._mud_gen.print_mud_draft()
+
         self._mud_gen.expose_mud_file(self._interface)
+
+    def update(self) -> None:
+        """ Update method recreate the MUD periodically. """
+        # To call this method is necessary to change the integration type. Button seems to do not support it.
+        _LOGGER.info("Automatically updating the MUD file!")
+        self.press()
+
