@@ -34,7 +34,7 @@ DEFAULT_NAME = "Emulated Temperature Sensor"
 
     sensor:
     - platform: emulated_temp_sensor
-        scan_interval: 300
+      scan_interval: 300
 """
 _LOGGER = logging.getLogger(__name__)
 

@@ -39,8 +39,8 @@ POST_LAST_TEMP_URL = "/api/temperatures"
 
     sensor:
     - platform: emulated_temp_sensor
-      scan_interval: 300
-      url: localhost  // "host.docker.internal" if the integration is running in a container
+      scan_interval: 300  // number of seconds that will trigger an update
+      url: localhost      // "host.docker.internal" if the integration is running in a container
 """
 _LOGGER = logging.getLogger(__name__)
 
