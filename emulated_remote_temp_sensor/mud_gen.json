@@ -4,7 +4,7 @@
             "access-lists": {
                 "access-list": [
                     {
-                        "name": "button-ping-v4from"
+                        "name": "temp-v4from"
                     }
                 ]
             }
@@ -13,7 +13,7 @@
             "access-lists": {
                 "access-list": [
                     {
-                        "name": "button-ping-v4to"
+                        "name": "temp-v4to"
                     }
                 ]
             }
@@ -22,15 +22,15 @@
     "ietf-access-control-list:acls": {
         "acl": [
             {
-                "name": "button-ping-v4to",
+                "name": "temp-v4from",
                 "type": "ipv4-acl-type",
                 "aces": {
                     "ace": [
                         {
-                            "name": "google-to",
+                            "name": "temp-local-fr",
                             "matches": {
                                 "ipv4": {
-                                    "ietf-acldns:src-dnsname": "google.com"
+                                    "ietf-acldns:dst-dnsname": "192.168.7.242"
                                 }
                             },
                             "actions": {
@@ -41,15 +41,15 @@
                 }
             },
             {
-                "name": "button-ping-v4from",
+                "name": "temp-v4to",
                 "type": "ipv4-acl-type",
                 "aces": {
                     "ace": [
                         {
-                            "name": "google-fr",
+                            "name": "temp-local-to",
                             "matches": {
                                 "ipv4": {
-                                    "ietf-acldns:dst-dnsname": "google.com"
+                                    "ietf-acldns:src-dnsname": "192.168.7.242"
                                 }
                             },
                             "actions": {

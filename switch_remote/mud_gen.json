@@ -1,0 +1,64 @@
+{
+    "ietf-mud:mud": {
+        "from-device-policy": {
+            "access-lists": {
+                "access-list": [
+                    {
+                        "name": "switch-v4from"
+                    }
+                ]
+            }
+        },
+        "to-device-policy": {
+            "access-lists": {
+                "access-list": [
+                    {
+                        "name": "switch-v4to"
+                    }
+                ]
+            }
+        }
+    },
+    "ietf-access-control-list:acls": {
+        "acl": [
+            {
+                "name": "switch-v4from",
+                "type": "ipv4-acl-type",
+                "aces": {
+                    "ace": [
+                        {
+                            "name": "switch-local-fr",
+                            "matches": {
+                                "ipv4": {
+                                    "ietf-acldns:dst-dnsname": "192.168.7.242"
+                                }
+                            },
+                            "actions": {
+                                "forwarding": "accept"
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "switch-v4to",
+                "type": "ipv4-acl-type",
+                "aces": {
+                    "ace": [
+                        {
+                            "name": "switch-local-to",
+                            "matches": {
+                                "ipv4": {
+                                    "ietf-acldns:src-dnsname": "192.168.7.242"
+                                }
+                            },
+                            "actions": {
+                                "forwarding": "accept"
+                            }
+                        }
+                    ]
+                }
+            }
+        ]
+    }
+}
