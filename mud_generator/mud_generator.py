@@ -161,26 +161,37 @@ class MUDGenerator():
 
     def _add_rules_to_draft(self, snippet_path) -> int:
         inserted_rules = 0
+
+        if not os.path.isfile(snippet_path):
+            _LOGGER.error("MUD snippet does not exists! Filepath: <%s>", snippet_path)
+            return inserted_rules
+
         with open(snippet_path, "r", encoding="utf-8") as inputfile:
-            mud_extract = json.load(inputfile)
+            try:
+                mud_extract = json.load(inputfile)
 
-            old_from_policies = self._mud_draft["ietf-mud:mud"]["from-device-policy"]["access-lists"]["access-list"]
-            new_from_policies = mud_extract["ietf-mud:mud"]["from-device-policy"]["access-lists"]["access-list"]
-            from_count = self._add_policies_if_not_exist(old_from_policies, new_from_policies, self._mud_draft["ietf-mud:mud"]["from-device-policy"]["access-lists"]["access-list"])
+                old_from_policies = self._mud_draft["ietf-mud:mud"]["from-device-policy"]["access-lists"]["access-list"]
+                new_from_policies = mud_extract["ietf-mud:mud"]["from-device-policy"]["access-lists"]["access-list"]
+                from_count = self._add_policies_if_not_exist(old_from_policies, new_from_policies, self._mud_draft["ietf-mud:mud"]["from-device-policy"]["access-lists"]["access-list"])
 
-            old_to_policy = self._mud_draft["ietf-mud:mud"]["to-device-policy"]["access-lists"]["access-list"]
-            new_to_policy = mud_extract["ietf-mud:mud"]["to-device-policy"]["access-lists"]["access-list"]
-            to_count = self._add_policies_if_not_exist(old_to_policy, new_to_policy, self._mud_draft["ietf-mud:mud"]["to-device-policy"]["access-lists"]["access-list"])
+                old_to_policy = self._mud_draft["ietf-mud:mud"]["to-device-policy"]["access-lists"]["access-list"]
+                new_to_policy = mud_extract["ietf-mud:mud"]["to-device-policy"]["access-lists"]["access-list"]
+                to_count = self._add_policies_if_not_exist(old_to_policy, new_to_policy, self._mud_draft["ietf-mud:mud"]["to-device-policy"]["access-lists"]["access-list"])
 
-            old_acls = self._mud_draft["ietf-access-control-list:acls"]["acl"]
-            new_acls = mud_extract["ietf-access-control-list:acls"]["acl"]
-            acl_count = self._add_acls_if_not_exist(old_acls, new_acls, self._mud_draft["ietf-access-control-list:acls"]["acl"])
+                old_acls = self._mud_draft["ietf-access-control-list:acls"]["acl"]
+                new_acls = mud_extract["ietf-access-control-list:acls"]["acl"]
+                acl_count = self._add_acls_if_not_exist(old_acls, new_acls, self._mud_draft["ietf-access-control-list:acls"]["acl"])
 
-            if (from_count+to_count) != acl_count:
-                _LOGGER.warning("The added snippet is inconsistent!")
-                inserted_rules = -1
-            else:
-                inserted_rules = acl_count
+                if (from_count+to_count) != acl_count:
+                    _LOGGER.warning("The added snippet is inconsistent!")
+                    inserted_rules = -1
+                else:
+                    inserted_rules = acl_count
+
+            except json.decoder.JSONDecodeError as ex:
+                _LOGGER.error("Error parsing the MUD snippet: <%s>", snippet_path)
+                _LOGGER.error("Snippet Error: %s", ex)
+
         return inserted_rules
 
     def _add_policies_if_not_exist(self, old_policies, new_policies, target):
