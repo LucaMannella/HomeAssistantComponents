@@ -1,4 +1,4 @@
-"""Platform for integrating a Simple Access Light."""
+"""Platform for integrating a LightSimpleAccess."""
 from __future__ import annotations
 from typing import Any, Final
 import gc
@@ -12,6 +12,9 @@ from homeassistant.components.switch import SwitchEntity
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 
+NAME_KEY = "name"
+DEFAULT_NAME = "Simple Access"
+
 _LOGGER = logging.getLogger(__name__)
 
 def setup_platform(
@@ -20,9 +23,12 @@ def setup_platform(
     add_entities: AddEntitiesCallback,
     discovery_info: DiscoveryInfoType | None = None,
 ) -> None:
-    """Adding the Simple Access light to Home Assistant."""
+    """Adding the LightSimpleAccess to Home Assistant."""
 
-    add_entities([LightSimpleAccess()])
+    if NAME_KEY in config:
+        add_entities([LightSimpleAccess(config[NAME_KEY])])
+    else:
+        add_entities([LightSimpleAccess()])
     return True
 
 
@@ -32,18 +38,17 @@ class LightSimpleAccess(LightEntity):
     _target: Final[str] = "switch.switch_target"
     _target_name: Final[str] = "Switch Target"
 
-    def __init__(self, upload: bool = False) -> None:
+    def __init__(self, name: str = DEFAULT_NAME) -> None:
         """Initialize a LightSimpleAccess."""
-        self._name = "Simple Access"
+        self._name = name
         self._brightness = None
         self._state = False
-        self._upload = upload
         self._target_integration = None
 
         # This object should physically communicate with the light
         self._light = LightEntity()
 
-        _LOGGER.info('Light %s was created', self._name)
+        _LOGGER.info('Light <%s> was created', self._name)
 
     @property
     def name(self) -> str:
