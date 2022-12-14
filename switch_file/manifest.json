@@ -1,6 +1,6 @@
 {
-  "domain": "file_switch",
-  "name": "File Switch",
+  "domain": "switch_file",
+  "name": "Switch File",
   "documentation": "https://developers.home-assistant.io/docs/core/entity/",
   "dependencies": [],
   "codeowners": [],
