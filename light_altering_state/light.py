@@ -12,6 +12,9 @@ from homeassistant.components.switch import SwitchEntity
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 
+NAME_KEY = "name"
+DEFAULT_NAME = "Altering State"
+
 _LOGGER = logging.getLogger(__name__)
 
 def setup_platform(
@@ -20,9 +23,12 @@ def setup_platform(
     add_entities: AddEntitiesCallback,
     discovery_info: DiscoveryInfoType | None = None,
 ) -> None:
-    """Adding the Simple Altering light to Home Assistant."""
+    """Adding the LightAlteringState to Home Assistant."""
 
-    add_entities([LightAlteringState()])
+    if NAME_KEY in config:
+        add_entities([LightAlteringState(config[NAME_KEY])])
+    else:
+        add_entities([LightAlteringState()])
     return True
 
 
@@ -32,12 +38,11 @@ class LightAlteringState(LightEntity):
     _target: Final[str] = "switch.switch_target"
     _use_api: Final[bool] = False
 
-    def __init__(self, upload: bool = False) -> None:
+    def __init__(self, name: str = DEFAULT_NAME) -> None:
         """Initialize a LightAlteringState."""
-        self._name = "Simple Altering"
+        self._name = name
         self._brightness = None
         self._state = False
-        self._upload = upload
 
         # This object should physically communicate with the light
         self._light = LightEntity()
