@@ -17,6 +17,7 @@ DEFAULT_NAME = "Simple Access"
 
 _LOGGER = logging.getLogger(__name__)
 
+
 def setup_platform(
     hass: HomeAssistant,
     config: ConfigType,
@@ -48,7 +49,7 @@ class LightSimpleAccess(LightEntity):
         # This object should physically communicate with the light
         self._light = LightEntity()
 
-        _LOGGER.info('Light <%s> was created', self._name)
+        _LOGGER.info("Light <%s> was created", self._name)
 
     @property
     def name(self) -> str:
@@ -103,7 +104,7 @@ class LightSimpleAccess(LightEntity):
 
         if self._target_integration:
             secret = self._target_integration._my_secret
-            _LOGGER.info('The secret of %s is: %s', self._target_name, secret)
+            _LOGGER.info("The secret of %s is: %s", self._target_name, secret)
 
     def alter_values(self):
         """This method read the secret stored inside the target."""
