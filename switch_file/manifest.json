@@ -6,5 +6,8 @@
   "codeowners": [],
   "requirements": [],
   "iot_class": "local_polling",
-  "version": "0.1.0"
+  "version": "0.1.0",
+  "presentation": "https://docs.google.com/presentation/d/1F1pGOoSf0dD79Dl5dgys0ll7xiuIA4XiQeNeJ-xlqMg",
+  "blog_post": "https://www.home-assistant.io/blog/2016/06/13/home-assistant-at-pycon-2016/",
+  "youtube_video": "https://www.youtube.com/watch?v=Cfasc9EgbMU"
 }
