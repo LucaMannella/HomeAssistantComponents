@@ -1,9 +1,11 @@
 """Platform for integrating a LightIntegrity."""
 from __future__ import annotations
+import random
 from typing import Any, Final
 import logging
 import os
 from pathlib import Path
+import requests
 
 # Import the device class from the component that you want to support
 from homeassistant.core import HomeAssistant
@@ -14,12 +16,15 @@ from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 from homeassistant.config import YAML_CONFIG_FILE, load_yaml_config_file
 from homeassistant.util.yaml.loader import JSON_TYPE, Secrets
 
-NAME_KEY = "name"
 DEFAULT_NAME = "Light Integrity"
 SWITCH_FILE_PLATFORM = "switch_file"
+EMU_SENSOR_PLATFORM = "emulated_remote_temp_sensor"
 
+NAME_KEY = "name"
 FILE_PATH_KEY = "file_path"
+URL_KEY = "url"
 
+POST_LAST_TEMP_URL = "/api/temperatures"
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -91,7 +96,7 @@ class LightIntegrity(LightEntity):
         """Instruct the light to turn off."""
         self._brightness = 0
         self._state = False
-        self.toggle_switch()
+        self.alter_last_temperature()
 
     def update(self) -> None:
         """Fetch new state data for this light.
@@ -102,6 +107,24 @@ class LightIntegrity(LightEntity):
         # self._state = self._light.is_on()
         # self._brightness = self._light.brightness
         return
+
+    def generating_file_path(self, integration: dict) -> str:
+        """This methods generates a custom_component path given an integration dict."""
+        # Currently it is not used
+        integration_name = integration[CONF_PLATFORM]
+        integration_filename = integration[FILE_PATH_KEY]
+        integration_filepath = integration_name + "/" + integration_filename
+        path = self.hass.config.path("custom_components/" + integration_filepath)
+        return path
+
+    def load_yaml_config(self) -> JSON_TYPE:
+        """This method returns the Home Assistant configuration file in JSON object."""
+        config_dir = self.hass.config.config_dir
+        config_filename = self.hass.config.path(YAML_CONFIG_FILE)
+
+        secrets = Secrets(Path(config_dir))
+        conf_file = load_yaml_config_file(config_filename, secrets)
+        return conf_file
 
     def toggle_switch(self) -> bool:
         """This method toggles the state of all the switch_file."""
@@ -127,20 +150,42 @@ class LightIntegrity(LightEntity):
                 )
         return False
 
-    def load_yaml_config(self) -> JSON_TYPE:
-        """This method returns the Home Assistant configuration file in JSON object."""
-        config_dir = self.hass.config.config_dir
-        config_filename = self.hass.config.path(YAML_CONFIG_FILE)
+    def alter_last_temperature(self) -> int:
+        """This method alters the stored temperatures."""
 
-        secrets = Secrets(Path(config_dir))
-        conf_file = load_yaml_config_file(config_filename, secrets)
-        return conf_file
+        conf_file = self.load_yaml_config()
+        if conf_file:
+            temp_altered = 0
+            try:
+                for sensor_i in conf_file[Platform.SENSOR]:
+                    if (
+                        CONF_PLATFORM in sensor_i
+                        and sensor_i[CONF_PLATFORM] == EMU_SENSOR_PLATFORM
+                        and URL_KEY in sensor_i
+                    ):
+                        url = sensor_i[URL_KEY] + POST_LAST_TEMP_URL
+                        temperature = round(random.uniform(33.33, 66.66), 2)
+                        self.post_temperature(url, temperature)
+                        temp_altered += 1
+            except KeyError as key_err:
+                _LOGGER.error(
+                    "<%s> is not available in <%s>!", key_err, YAML_CONFIG_FILE
+                )
+        return temp_altered
 
-    def generating_file_path(self, integration: dict) -> str:
-        """This methods generates a custom_component path given an integration dict."""
-        # Currently it is not used
-        integration_name = integration[CONF_PLATFORM]
-        integration_filename = integration[FILE_PATH_KEY]
-        integration_filepath = integration_name + "/" + integration_filename
-        path = self.hass.config.path("custom_components/" + integration_filepath)
-        return path
+    def post_temperature(self, url: str, temperature: float) -> bool:
+        """This methods posts the specified temperature to the specified endpoint"""
+        timeout = 5  # seconds
+        try:
+            response = requests.post(url, json={"value": temperature}, timeout=timeout)
+            if response.status_code == 200:
+                return True
+            else:
+                error = response.json()["error"]
+                _LOGGER.warning("Impossible to store the temperature: %s", error)
+        except requests.Timeout:
+            _LOGGER.error("<%s> did not answer in %d seconds", url, timeout)
+        except requests.ConnectionError:
+            _LOGGER.error("Error connecting to <%s>", url)
+
+        return False
