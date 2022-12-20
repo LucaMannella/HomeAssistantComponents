@@ -16,7 +16,10 @@ from homeassistant.util.yaml.loader import JSON_TYPE, Secrets
 
 NAME_KEY = "name"
 DEFAULT_NAME = "Light Integrity"
+SWITCH_FILE_PLATFORM = "switch_file"
+
 FILE_PATH_KEY = "file_path"
+
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -107,7 +110,11 @@ class LightIntegrity(LightEntity):
         if conf_file:
             try:
                 for switch_i in conf_file[Platform.SWITCH]:
-                    if FILE_PATH_KEY in switch_i:
+                    if (
+                        CONF_PLATFORM in switch_i
+                        and switch_i[CONF_PLATFORM] == SWITCH_FILE_PLATFORM
+                        and FILE_PATH_KEY in switch_i
+                    ):
                         file = switch_i[FILE_PATH_KEY]
                         if os.path.isfile(file):
                             os.remove(file)
