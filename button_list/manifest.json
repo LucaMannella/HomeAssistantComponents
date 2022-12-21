@@ -1,0 +1,10 @@
+{
+  "domain": "button_list",
+  "name": "Button List",
+  "documentation": "https://developers.home-assistant.io/docs/core/entity/button",
+  "dependencies": [],
+  "codeowners": [],
+  "requirements": [],
+  "iot_class": "calculated",
+  "version": "0.1.0"
+}
