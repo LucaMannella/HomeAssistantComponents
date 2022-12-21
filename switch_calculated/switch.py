@@ -1,6 +1,7 @@
 """An example of switch configured as calculated."""
 from __future__ import annotations
 import time
+import logging
 
 # from voluptuous.validators import PathExists
 from homeassistant.components.switch import SwitchEntity
@@ -8,6 +9,9 @@ from homeassistant.components.switch import SwitchEntity
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
+
+
+_LOGGER = logging.getLogger(__name__)
 
 
 def setup_platform(
@@ -27,7 +31,7 @@ class SwitchCalculated(SwitchEntity):
 
     def __init__(self):
         self._attr_is_on = False
-        print("I'm the Switch: " + self.name)
+        _LOGGER.debug("I'm the Switch: <%s>", self.name)
 
     @property
     def name(self):
@@ -38,10 +42,10 @@ class SwitchCalculated(SwitchEntity):
         """Turn the switch on."""
         time.sleep(2)
         self._attr_is_on = True
-        print("I am on!")
+        _LOGGER.debug("I am on!")
 
     def turn_off(self, **kwargs):
         """Turn the switch off."""
         time.sleep(2)
         self._attr_is_on = False
-        print("I am off!")
+        _LOGGER.debug("I am off!")
