@@ -26,7 +26,7 @@ def setup_platform(
     """Adding the Target Switch to Home Assistant."""
 
     if NAME_KEY in config:
-        add_entities([SwitchTarget(config[NAME_KEY], SECRET)])
+        add_entities([SwitchTarget(SECRET, config[NAME_KEY])])
     else:
         add_entities([SwitchTarget(SECRET)])
     return True
