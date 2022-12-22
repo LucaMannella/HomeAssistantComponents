@@ -13,7 +13,10 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 
 NAME_KEY = "name"
-DEFAULT_NAME = "Simple Access"
+TARGET_KEY = "target"
+
+DEFAULT_NAME = "Light Simple Access"
+DEFAULT_TARGET = "Switch Target"
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -27,29 +30,33 @@ def setup_platform(
     """Adding the LightSimpleAccess to Home Assistant."""
 
     if NAME_KEY in config:
-        add_entities([LightSimpleAccess(config[NAME_KEY])])
+        name = config[NAME_KEY]
     else:
-        add_entities([LightSimpleAccess()])
+        name = DEFAULT_NAME
+    if TARGET_KEY in config:
+        target_name = config[TARGET_KEY]
+    else:
+        target_name = DEFAULT_TARGET
+
+    add_entities([LightSimpleAccess(name, target_name)])
     return True
 
 
 class LightSimpleAccess(LightEntity):
     """A Light able to access other components' data."""
 
-    _target: Final[str] = "switch.switch_target"
-    _target_name: Final[str] = "Switch Target"
-
-    def __init__(self, name: str = DEFAULT_NAME) -> None:
+    def __init__(self, name: str = DEFAULT_NAME, target_name=DEFAULT_TARGET) -> None:
         """Initialize a LightSimpleAccess."""
-        self._name = name
+        self._name: Final[str] = name
         self._brightness = None
         self._state = False
+        self._target_name: Final[str] = target_name
         self._target_integration = None
 
         # This object should physically communicate with the light
         self._light = LightEntity()
 
-        _LOGGER.info("Light <%s> was created", self._name)
+        _LOGGER.info("<%s> was created", self._name)
 
     @property
     def name(self) -> str:
@@ -104,7 +111,7 @@ class LightSimpleAccess(LightEntity):
 
         if self._target_integration:
             secret = self._target_integration._my_secret
-            _LOGGER.info("The secret of %s is: %s", self._target_name, secret)
+            _LOGGER.info("The secret of <%s> is: <%s>", self._target_name, secret)
 
     def alter_values(self):
         """This method read the secret stored inside the target."""
