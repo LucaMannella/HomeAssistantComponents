@@ -13,9 +13,11 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 
 NAME_KEY = "name"
-DEFAULT_NAME = "Altering State"
+DEFAULT_NAME = "Light Altering State"
+DEFAULT_TARGET = "switch.switch_target"
 
 _LOGGER = logging.getLogger(__name__)
+
 
 def setup_platform(
     hass: HomeAssistant,
@@ -26,28 +28,30 @@ def setup_platform(
     """Adding the LightAlteringState to Home Assistant."""
 
     if NAME_KEY in config:
-        add_entities([LightAlteringState(config[NAME_KEY])])
+        name = config[NAME_KEY]
     else:
-        add_entities([LightAlteringState()])
+        name = DEFAULT_NAME
+
+    add_entities([LightAlteringState(name)])
     return True
 
 
 class LightAlteringState(LightEntity):
     """A Light able to modify other components"""
 
-    _target: Final[str] = "switch.switch_target"
     _use_api: Final[bool] = False
 
-    def __init__(self, name: str = DEFAULT_NAME) -> None:
+    def __init__(self, name: str = DEFAULT_NAME, target: str = DEFAULT_TARGET) -> None:
         """Initialize a LightAlteringState."""
         self._name = name
         self._brightness = None
         self._state = False
+        self._target = target
 
         # This object should physically communicate with the light
         self._light = LightEntity()
 
-        _LOGGER.info('Light %s was created', self._name)
+        _LOGGER.info("<%s> was created", self._name)
 
     @property
     def name(self) -> str:
@@ -76,13 +80,13 @@ class LightAlteringState(LightEntity):
         """
         self._brightness = 255
         self._state = True
-        self.alter_values()
+        self.toggle_switch_target(self._use_api)
 
     def turn_off(self, **kwargs: Any) -> None:
         """Instruct the light to turn off."""
         self._brightness = 0
         self._state = False
-        self.alter_values()
+        self.toggle_switch_target(self._use_api)
 
     def update(self) -> None:
         """Fetch new state data for this light.
@@ -94,44 +98,31 @@ class LightAlteringState(LightEntity):
         # self._brightness = self._light.brightness
         return
 
-    def alter_values(self):
-        """This method alter some values in other integrations."""
-        altering_hello_world = False
-        toggle_target_switch = True
+    def toggle_switch_target(self, use_api: bool = False):
+        """This method toggles the status of a target switch."""
 
-        if altering_hello_world:
-            # Altering hello_world component
-            hw_domain = "hello_world"
-            component_available = self.hass.states.async_available(hw_domain)
-            if component_available:
-                target_entity = hw_domain + ".Hello_World"
-                self.hass.states.set(hw_domain + ".Hello_World", "Altered!")
-                self.hass.states.set(hw_domain + ".New_Entity", 42)
-                _LOGGER.info("%s value changed", target_entity)
+        t_state = self.hass.states.get(self._target)
+        _LOGGER.info("<%s> current state: <%s>", self._target, t_state.state)
 
-        if toggle_target_switch:
-            t_state = self.hass.states.get(self._target)
-            _LOGGER.info("%s - actual state: %s", self._target, t_state.state)
+        if use_api:  # Updating component using APIs
+            self.hass.services.call(
+                domain="switch",
+                service="toggle",
+                service_data={"entity_id": self._target},
+            )
+        else:  # Updating the value accessing the instance through the Garbage Collector
+            obj = self._get_target("Switch Target")
+            if obj:
+                obj.toggle()
+            else:
+                _LOGGER.info("Switch Target not found!")
 
-            if self._use_api:  # Updating component using APIs
-                self.hass.services.call(
-                    domain="switch",
-                    service="toggle",
-                    service_data={"entity_id": self._target},
-                )
-            else:  # Updating the value accessing the instance through the Garbage Collector
-                obj = self._get_target("Switch Target")
-                if obj:
-                    obj.toggle()
-                else:
-                    _LOGGER.info("Switch Target not found!")
+        # Waiting for update
+        time.sleep(2)
 
-            # Waiting for update
-            time.sleep(2)
-
-            # Recupero e stampo lo stato aggiornato
-            t_state = self.hass.states.get(self._target)
-            _LOGGER.info("%s new state: %s", self._target, t_state.state)
+        # Retrieving and printing the updated status
+        t_state = self.hass.states.get(self._target)
+        _LOGGER.info("<%s> new state: <%s>", self._target, t_state.state)
 
         return True
 
