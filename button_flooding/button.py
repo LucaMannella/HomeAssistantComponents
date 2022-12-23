@@ -5,22 +5,15 @@ import time
 import logging
 
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.typing import ConfigType
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 from homeassistant.components.button import ButtonEntity
 
-""" To configure logging go inside "configuration.yaml"
-
-    logger:
-        default: info
-        logs:
-            custom_components.button_locking: debug
-"""
 _LOGGER = logging.getLogger(__name__)
 
 WAITING_TIME_KEY = "waiting_time"
 DEFAULT_WAITING_TIME = 0.1
+
 
 def setup_platform(
     hass: HomeAssistant,
@@ -31,15 +24,15 @@ def setup_platform(
     """Set up the button."""
 
     if WAITING_TIME_KEY in config:
-        add_entities([ButtonLocking(config[WAITING_TIME_KEY])])
+        add_entities([ButtonFlooding(config[WAITING_TIME_KEY])])
     else:
-        add_entities([ButtonLocking(DEFAULT_WAITING_TIME)])
+        add_entities([ButtonFlooding(DEFAULT_WAITING_TIME)])
 
     # Return boolean to indicate that initialization was successfully.
     return True
 
 
-class ButtonLocking(ButtonEntity):
+class ButtonFlooding(ButtonEntity):
     "This class extend the ButtonEntity"
 
     _target_old: Final[str] = "switch.switch_calculated"
@@ -47,8 +40,8 @@ class ButtonLocking(ButtonEntity):
 
     def __init__(self, waiting_time=DEFAULT_WAITING_TIME) -> None:
         """Initialize the button."""
-        self._name = "Button Locking"
-        self._unique_id = "PoliTo.e-Lite.LM."+self._name
+        self._name = "Button Flooding"
+        self._unique_id = "PoliTo.e-Lite.LM." + self._name
         self._waiting_time: Final[float] = waiting_time
         _LOGGER.info("Waiting time: %0.3f seconds", self._waiting_time)
 
