@@ -13,10 +13,13 @@ from homeassistant.helpers.restore_state import (
     RestoreEntity,
 )  # To restore last stored value
 
+NAME_KEY = "name"
 MIN_TEMP_KEY = "min_temp"
 MAX_TEMP_KEY = "max_temp"
+
 DOMAIN = "emulated_temp_sensor"
 DEFAULT_NAME = "Emulated Temperature Sensor"
+UNIQUE_ID_PREFIX = "PoliTo.e-Lite.LM"
 
 # Work but does not support scan_interval
 # PLATFORM_SCHEMA = vol.Schema(
@@ -38,6 +41,7 @@ DEFAULT_NAME = "Emulated Temperature Sensor"
 """
 _LOGGER = logging.getLogger(__name__)
 
+
 def setup_platform(
     hass: HomeAssistant,
     config: ConfigType,
@@ -46,8 +50,8 @@ def setup_platform(
 ) -> None:
     """Set up the sensor platform."""
 
-    if "name" in config:
-        name = config["name"]
+    if NAME_KEY in config:
+        name = config[NAME_KEY]
     else:
         name = DEFAULT_NAME
 
@@ -71,7 +75,7 @@ class EmulatedTempSensor(SensorEntity, RestoreEntity):
     ) -> None:
         """Initialize the sensor."""
         self._sensor_name = name
-        self._unique_id = "PoliTo.e-Lite.LM."+self._sensor_name
+        self._unique_id = UNIQUE_ID_PREFIX + "." + self._sensor_name
         self._MIN_TMP: Final[int] = min_temp
         self._MAX_TMP: Final[int] = max_temp
         self._state = None
@@ -88,7 +92,9 @@ class EmulatedTempSensor(SensorEntity, RestoreEntity):
             mantissa = randint(0, 9)
             self._state = float(str(integer) + "." + str(mantissa))
 
-        _LOGGER.info("%s - initial temperature: %s", self._sensor_name, str(self._state))
+        _LOGGER.info(
+            "%s - initial temperature: %s", self._sensor_name, str(self._state)
+        )
 
     @property
     def name(self) -> str:
