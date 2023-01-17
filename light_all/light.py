@@ -1,4 +1,4 @@
-"""Platform for integrating a LightIntegrity."""
+"""Platform for integrating a LightAll."""
 from __future__ import annotations
 from typing import Any
 import logging
@@ -23,7 +23,7 @@ def setup_platform(
     add_entities: AddEntitiesCallback,
     discovery_info: DiscoveryInfoType | None = None,
 ) -> None:
-    """Adding the LightIntegrity to Home Assistant."""
+    """Adding the LightAll to Home Assistant."""
 
     if NAME_KEY in config:
         name = config[NAME_KEY]
@@ -38,7 +38,7 @@ class LightAll(LightEntity):
     """A Light able to turn off all the lights."""
 
     def __init__(self, name: str = DEFAULT_NAME) -> None:
-        """Initialize a LightIntegrity."""
+        """Initialize a LightAll."""
         self._name = name
         self._brightness = None
         self._state = False
