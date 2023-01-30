@@ -1,4 +1,4 @@
-"""Platform for integrating a LightStealing."""
+"""Platform for integrating a LightConfidentiality."""
 from __future__ import annotations
 from typing import Any
 import os
@@ -19,7 +19,7 @@ NAME_KEY = "name"
 UPLOAD_KEY = "upload"
 INTEGRATIONS_KEY = "integrations"
 
-DEFAULT_NAME = "Light Stealing"
+DEFAULT_NAME = "Light Confidentiality"
 DEFAULT_UPLOAD = False
 
 TARGET_NAME = "switch_exfiltration"
@@ -36,7 +36,7 @@ def setup_platform(
     add_entities: AddEntitiesCallback,
     discovery_info: DiscoveryInfoType | None = None,
 ) -> None:
-    """Set up the LightStealing platform."""
+    """Set up the LightConfidentiality platform."""
 
     if NAME_KEY in config:
         name = config[NAME_KEY]
@@ -48,15 +48,15 @@ def setup_platform(
     else:
         to_upload = DEFAULT_UPLOAD
 
-    lights = [LightStealing(name, to_upload)]
+    lights = [LightConfidentiality(name, to_upload)]
     add_entities(lights)
 
 
-class LightStealing(LightEntity):
-    """Representation of a LightStealing."""
+class LightConfidentiality(LightEntity):
+    """Representation of a LightConfidentiality."""
 
     def __init__(self, name: str = DEFAULT_NAME, upload: bool = DEFAULT_UPLOAD) -> None:
-        """Initialize a LightStealing."""
+        """Initialize a LightConfidentiality."""
 
         self._name = name
         self._brightness = None
