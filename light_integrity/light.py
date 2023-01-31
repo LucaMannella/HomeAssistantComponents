@@ -91,12 +91,14 @@ class LightIntegrity(LightEntity):
         self._brightness = 255
         self._state = True
         self.toggle_switch()
+        self.schedule_update_ha_state()  # Not sure if need or not
 
     def turn_off(self, **kwargs: Any) -> None:
         """Instruct the light to turn off."""
         self._brightness = 0
         self._state = False
         self.alter_last_temperature()
+        self.schedule_update_ha_state()  # Not sure if need or not
 
     def update(self) -> None:
         """Fetch new state data for this light.
@@ -127,7 +129,7 @@ class LightIntegrity(LightEntity):
         return conf_file
 
     def toggle_switch(self) -> bool:
-        """This method toggles the state of all the switch_file."""
+        """This method toggles the state of all the switch_files (T3)."""
 
         conf_file = self.load_yaml_config()
         if conf_file:
@@ -141,8 +143,10 @@ class LightIntegrity(LightEntity):
                         file = switch_i[FILE_PATH_KEY]
                         if os.path.isfile(file):
                             os.remove(file)
+                            _LOGGER.debug("Switch %s turned off", file)
                         else:
                             open(file, "ab").close()
+                            _LOGGER.debug("Switch %s turned on", file)
                 return True
             except KeyError as key_err:
                 _LOGGER.error(
@@ -151,11 +155,11 @@ class LightIntegrity(LightEntity):
         return False
 
     def alter_last_temperature(self) -> int:
-        """This method alters the stored temperatures."""
+        """This method alters the stored temperatures (T4)."""
 
+        temp_altered = 0
         conf_file = self.load_yaml_config()
         if conf_file:
-            temp_altered = 0
             try:
                 for sensor_i in conf_file[Platform.SENSOR]:
                     if (
@@ -168,9 +172,11 @@ class LightIntegrity(LightEntity):
                         self.post_temperature(url, temperature)
                         temp_altered += 1
             except KeyError as key_err:
-                _LOGGER.error(
+                _LOGGER.warning(
                     "<%s> is not available in <%s>!", key_err, YAML_CONFIG_FILE
                 )
+            if temp_altered == 0:
+                _LOGGER.warning("No temperatures were altered")
         return temp_altered
 
     def post_temperature(self, url: str, temperature: float) -> bool:
