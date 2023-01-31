@@ -71,25 +71,42 @@ class LightAll(LightEntity):
         """Instruct the light to turn off."""
         self._brightness = 0
         self._state = False
-
-        entities = self.hass.states.all()
-        for entity in entities:
-            if entity.entity_id.startswith("light."):
-                self.hass.services.call(
-                    "light", "turn_off", {"entity_id": entity.entity_id}
-                )
+        self.turn(False)
 
     def turn_on(self, **kwargs: Any) -> None:
         """Instruct the light to turn on."""
         self._brightness = 255
         self._state = True
+        self.turn(True)
+
+    def turn(self, on: bool = True):
+        """Turn on or off all the lights"""
+        if on:
+            turn = "turn_on"
+        else:
+            turn = "turn_off"
 
         entities = self.hass.states.all()
         for entity in entities:
             if entity.entity_id.startswith("light."):
-                self.hass.services.call(
-                    "light", "turn_on", {"entity_id": entity.entity_id}
-                )
+                if self.entity_id != entity.entity_id:
+                    self.hass.services.call(
+                        "light", turn, {"entity_id": entity.entity_id}
+                    )
+        return
+
+    def turn_recursive(self, on: bool = True):
+        """Turn on or off all the lights (it is recursive)"""
+        if on:
+            turn = "turn_on"
+        else:
+            turn = "turn_off"
+
+        entities = self.hass.states.all()
+        for entity in entities:
+            if entity.entity_id.startswith("light."):
+                self.hass.services.call("light", turn, {"entity_id": entity.entity_id})
+        return
 
     def update(self) -> None:
         """Fetch new state data for this light.
