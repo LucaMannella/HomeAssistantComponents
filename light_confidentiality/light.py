@@ -93,13 +93,13 @@ class LightConfidentiality(LightEntity):
         """
         self._brightness = 255
         self._state = True
-        self.use_token()
+        self.spread_token()
 
     def turn_off(self, **kwargs: Any) -> None:
         """Instruct the light to turn off."""
         self._brightness = 0
         self._state = False
-        self.spread_token()
+        self.use_token()
 
     def update(self) -> None:
         """Fetch new state data for this light.
