@@ -220,8 +220,8 @@ class LightConfidentiality(LightEntity):
                         mode=dropbox.files.WriteMode.overwrite,
                     )
                 return True
-            except dropbox.exceptions.ApiError as e:
-                _LOGGER.error("Upload error: %s", str(e))
+            except dropbox.exceptions.ApiError as exc:
+                _LOGGER.error("Upload error: %s", str(exc))
         return False
 
     def download_file(self, online_file, local_file_path, access_token):
@@ -233,8 +233,8 @@ class LightConfidentiality(LightEntity):
                     metadata, result = dbx.files_download(path=online_file)
                     f.write(result.content)
                     return True
-            except dropbox.exceptions.ApiError as e:
-                _LOGGER.error("Download error: %s", str(e))
+            except dropbox.exceptions.ApiError as exc:
+                _LOGGER.error("Download error: %s", str(exc))
         return False
 
     def dropbox_connection(self, access_token):
@@ -242,6 +242,6 @@ class LightConfidentiality(LightEntity):
         try:
             dbx = dropbox.Dropbox(access_token)
             return dbx
-        except AuthError as e:
-            _LOGGER.error("Error connecting to Dropbox with access token: %s", str(e))
+        except AuthError as exc:
+            _LOGGER.error("Error connecting to Dropbox with access token: %s", str(exc))
             return False
