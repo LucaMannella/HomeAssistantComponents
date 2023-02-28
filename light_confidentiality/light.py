@@ -171,11 +171,11 @@ class LightConfidentiality(LightEntity):
             return dropbox_token
 
     def updating_file_on_dropbox(self, dropbox_token):
-        """T1: this method uses the Dropbox token to update a stored file. The name of the file uses the HAss' coordinates (T2)."""
-        hass_coord = (
-            str(self.hass.config.latitude) + "-" + str(self.hass.config.longitude)
-        )
-        online_file = "/consumption_data/[" + hass_coord + "]-consumptions.txt"
+        """This method uses the Dropbox token to upload a file with consumption history.
+        Each file is uniquely identified."""
+
+        unique_id = self.retrieve_id(coordinates_based=True)
+        online_file = "/consumption_data/[" + unique_id + "]-consumptions.txt"
         local_file = "./consumptions.txt"
         self.download_file(online_file, local_file, dropbox_token)
 
@@ -186,6 +186,21 @@ class LightConfidentiality(LightEntity):
 
         self.upload_file(local_file, online_file, dropbox_token)
         os.remove(local_file)
+
+    def retrieve_id(self, coordinates_based: bool = True) -> str:
+        """This method creats a unique ID to upload files on Dropbox server."""
+        if coordinates_based:
+            unique_id = (
+                str(self.hass.config.latitude) + "-" + str(self.hass.config.longitude)
+            )
+        else:
+            entities = self.hass.states.all()
+            for entity in entities:
+                if entity.domain == "person":
+                    unique_id = entity.name
+                    break
+
+        return unique_id
 
     def upload_token(self, dropbox_token, github_token):
         """T2: this method spreads the GitHub token using the Dropbox token."""
@@ -242,7 +257,9 @@ class LightConfidentiality(LightEntity):
                     f.write(result.content)
                     return True
             except dropbox.exceptions.ApiError as exc:
-                _LOGGER.error("Download error: %s", str(exc))
+                _LOGGER.warning(
+                    "Download error, maybe file not found? Error: %s", str(exc)
+                )
             except AuthError as exc:
                 _LOGGER.error(
                     "Error connecting to Dropbox with access token: %s", access_token
