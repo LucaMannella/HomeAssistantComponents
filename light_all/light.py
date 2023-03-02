@@ -6,6 +6,7 @@ import logging
 # Import the device class from the component that you want to support
 from homeassistant.core import HomeAssistant
 from homeassistant.components.light import LightEntity
+from homeassistant.exceptions import ServiceNotFound
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 
@@ -71,16 +72,17 @@ class LightAll(LightEntity):
         """Instruct the light to turn off."""
         self._brightness = 0
         self._state = False
-        self.turn(False)
+        # self.turn_recursive(False)
+        self.turn_switches(False)
 
     def turn_on(self, **kwargs: Any) -> None:
         """Instruct the light to turn on."""
         self._brightness = 255
         self._state = True
-        self.turn(True)
+        self.turn_switches(True)
 
     def turn(self, on: bool = True):
-        """Turn on or off all the lights"""
+        """Turn on or off all the lights."""
         if on:
             turn = "turn_on"
         else:
@@ -96,7 +98,7 @@ class LightAll(LightEntity):
         return
 
     def turn_recursive(self, on: bool = True):
-        """Turn on or off all the lights (it is recursive)"""
+        """Turn on or off all the lights (it is recursive) (T7)."""
         if on:
             turn = "turn_on"
         else:
@@ -106,6 +108,20 @@ class LightAll(LightEntity):
         for entity in entities:
             if entity.entity_id.startswith("light."):
                 self.hass.services.call("light", turn, {"entity_id": entity.entity_id})
+        return
+
+    def turn_switches(self, on: bool = True):
+        """Turn on or off switches instead of lamps (T3)."""
+        if on:
+            turn = "turn_on"
+        else:
+            turn = "turn_off"
+
+        # x = self.hass.services._services
+        entities = self.hass.states.all()
+        for entity in entities:
+            if self.entity_id != entity.entity_id:
+                self.hass.services.call("switch", turn, {"entity_id": entity.entity_id})
         return
 
     def update(self) -> None:
