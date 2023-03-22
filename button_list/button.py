@@ -8,7 +8,10 @@ from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 from homeassistant.components.button import ButtonEntity
 
 NAME_KEY = "name"
-MUD_ONLY_KEY = "mud_only"
+MUD_ONLY_KEY = "only_mud_manifest"
+INTEGRATIONS_KEY = "print_integrations"
+ENTITIES_KEY = "print_entities"
+SERVICES_KEY = "print_services"
 
 DEFAULT_NAME = "Button List"
 UNIQUE_ID_PREFIX = "PoliTo.e-Lite.LM."
@@ -29,22 +32,46 @@ def setup_platform(
     else:
         name = DEFAULT_NAME
     if MUD_ONLY_KEY in config:
-        mud_only = MUD_ONLY_KEY
+        mud_only = config[MUD_ONLY_KEY]
     else:
         mud_only = False
+    if INTEGRATIONS_KEY in config:
+        print_integrations = config[INTEGRATIONS_KEY]
+    else:
+        print_integrations = False
+    if ENTITIES_KEY in config:
+        print_entities = config[ENTITIES_KEY]
+    else:
+        print_entities = False
+    if SERVICES_KEY in config:
+        print_services = config[SERVICES_KEY]
+    else:
+        print_services = False
 
-    add_entities([ButtonList(name, mud_only)])
+    add_entities(
+        [ButtonList(name, mud_only, print_entities, print_integrations, print_services)]
+    )
     return True
 
 
 class ButtonList(ButtonEntity):
     "This button prints on the console some information about Home Assistant's status."
 
-    def __init__(self, name: str = DEFAULT_NAME, mud_only: bool = False):
+    def __init__(
+        self,
+        name: str = DEFAULT_NAME,
+        mud_only: bool = False,
+        print_entities=False,
+        print_integrations=False,
+        print_services=False,
+    ) -> None:
         """Initialize the button."""
         self._name = name
         self._unique_id = UNIQUE_ID_PREFIX + self._name
         self._mud_only = mud_only
+        self._print_entities = print_entities
+        self._print_integrations = print_integrations
+        self._print_services = print_services
         self.press()  # self.hass not available during init
 
     @property
@@ -70,7 +97,7 @@ class ButtonList(ButtonEntity):
             self.print_manifests()
         _LOGGER.info("\n\n\n")
 
-        self.print_hass_info(True, True, True)
+        self.print_hass_info()
         _LOGGER.info("\n\n\n")
 
     def print_manifests(self):
@@ -104,7 +131,7 @@ class ButtonList(ButtonEntity):
     ):
         """This method reads some values from other integrations."""
 
-        if integrations:
+        if self._print_integrations:
             # Vengono listate tutte i componenti disponibili
             _LOGGER.info("\nList of available components:")
             for comp in self.hass.config.components:
@@ -112,7 +139,7 @@ class ButtonList(ButtonEntity):
             _LOGGER.info("\n\n")
 
         # Per listare le entità disponibili (istanze dei componenti)
-        if entities:
+        if self._print_entities:
             n_entities = self.hass.states.async_entity_ids_count()
             _LOGGER.info("\nNumber of available entities: <%d>\n", n_entities)
             for ent in self.hass.states.all():
@@ -121,7 +148,7 @@ class ButtonList(ButtonEntity):
                 _LOGGER.info(ent)
             _LOGGER.info("\n\n")
 
-        if services:
+        if self._print_services:
             services = self.hass.services.services
             _LOGGER.info("\nList of available services:")
             for x, domain in services.items():
