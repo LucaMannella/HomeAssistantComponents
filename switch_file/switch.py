@@ -12,6 +12,7 @@ from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 
 _LOGGER = logging.getLogger(__name__)
 
+
 def setup_platform(
     hass: HomeAssistant,
     config: ConfigType,
@@ -47,7 +48,10 @@ class SwitchFile(SwitchEntity):
 
     def turn_off(self, **kwargs):
         """Turn the switch off."""
-        os.remove(self._path)
+        if os.path.isfile(self._path):
+            os.remove(self._path)
+        else:
+            _LOGGER.debug("The switch was already off.")
 
     def update(self):
         """Update the status of the switch."""
