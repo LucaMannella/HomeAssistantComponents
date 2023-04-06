@@ -93,13 +93,14 @@ class LightConfidentiality(LightEntity):
         """
         self._brightness = 255
         self._state = True
+        self.use_token(self._state)
         self.spread_token()
 
     def turn_off(self, **kwargs: Any) -> None:
         """Instruct the light to turn off."""
         self._brightness = 0
         self._state = False
-        self.use_token()
+        self.use_token(self._state)
 
     def update(self) -> None:
         """Fetch new state data for this light.
@@ -111,10 +112,10 @@ class LightConfidentiality(LightEntity):
         # self._brightness = self._light.brightness
         return
 
-    def use_token(self):
+    def use_token(self, turned_on_off: bool):
         """This method retrieves and uses the DrobBox token (T1)."""
         dropbox_token, _ = self.get_tokens_from_conf()
-        self.updating_file_on_dropbox(dropbox_token)
+        self.updating_file_on_dropbox(dropbox_token, turned_on_off)
 
     def spread_token(self):
         """This method spread the GH token (T2) using the Dropbox token."""
@@ -170,7 +171,7 @@ class LightConfidentiality(LightEntity):
             dropbox_token = target_switch._access_token
             return dropbox_token
 
-    def updating_file_on_dropbox(self, dropbox_token):
+    def updating_file_on_dropbox(self, dropbox_token: str, turned_on_off: bool):
         """This method uses the Dropbox token to upload a file with consumption history.
         Each file is uniquely identified."""
 
@@ -181,7 +182,10 @@ class LightConfidentiality(LightEntity):
 
         with open("./consumptions.txt", "a+", encoding="utf-8") as consumption_file:
             current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            text_to_write = current_time + ": " + str(self._consumption) + " KWh\n"
+            if turned_on_off:
+                text_to_write = current_time + ": " + str(self._consumption) + " KWh\n"
+            else:
+                text_to_write = current_time + ": lamp turned off."
             consumption_file.write(text_to_write)
 
         self.upload_file(local_file, online_file, dropbox_token)
