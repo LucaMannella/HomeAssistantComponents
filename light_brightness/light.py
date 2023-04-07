@@ -69,11 +69,12 @@ class LightBrightness(LightEntity):
 
     def turn_on(self, **kwargs: Any) -> None:
         """Instruct the light to turn on."""
-        _LOGGER.debug("Turning lamp on")
+
         self._state = True
         new_bri = kwargs.get("brightness")
 
         if not new_bri:
+            _LOGGER.debug("Turning lamp on")
             self._brightness = kwargs.get(ATTR_BRIGHTNESS_PCT, 255)
         elif self._brightness != new_bri:
             _LOGGER.info("Brightness from %s to %s", self._brightness, new_bri)
@@ -87,5 +88,6 @@ class LightBrightness(LightEntity):
         if self.is_on:
             self._state = False
             self._brightness = 0
+            _LOGGER.debug("Lamp turned off")
         else:
             _LOGGER.warning("Light already off")
