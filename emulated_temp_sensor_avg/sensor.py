@@ -6,7 +6,7 @@ from datetime import datetime
 import logging
 
 from homeassistant.components.sensor import SensorEntity, DOMAIN as SENSOR_DOMAIN
-from homeassistant.const import TEMP_CELSIUS
+from homeassistant.const import UnitOfTemperature
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
@@ -24,7 +24,7 @@ UNIQUE_ID_PREFIX = "PoliTo.eLite.LM."
     Every x seconds the update() function is called updating the emulated temperature.
 
     sensor:
-    - platform: emulated_temp_sensor_simple
+    - platform: emulated_temp_sensor_avg
       scan_interval: 300
 """
 _LOGGER = logging.getLogger(__name__)
@@ -63,7 +63,7 @@ class EmulatedTempSensorAvg(SensorEntity):
     ) -> None:
         """Initialize the sensor."""
         self._sensor_name = name
-        self._unique_id = UNIQUE_ID_PREFIX + SENSOR_DOMAIN + "." + DOMAIN
+        self._attr_unique_id = UNIQUE_ID_PREFIX + SENSOR_DOMAIN + "." + DOMAIN
         self._MIN_TMP: Final[int] = min_temp
         self._MAX_TMP: Final[int] = max_temp
         self._state = self.compute_random_temp()
@@ -90,10 +90,6 @@ class EmulatedTempSensorAvg(SensorEntity):
         return self._sensor_name
 
     @property
-    def unique_id(self) -> str | None:
-        return self._unique_id
-
-    @property
     def state(self):
         """Return the state of the sensor."""
         return self._state
@@ -101,7 +97,7 @@ class EmulatedTempSensorAvg(SensorEntity):
     @property
     def unit_of_measurement(self) -> str:
         """Return the unit of measurement."""
-        return TEMP_CELSIUS
+        return UnitOfTemperature.CELSIUS
 
     def update(self) -> None:
         """Fetch new state data for the sensor.

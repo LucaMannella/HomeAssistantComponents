@@ -5,7 +5,7 @@ from random import randint
 import logging
 
 from homeassistant.components.sensor import SensorEntity
-from homeassistant.const import TEMP_CELSIUS
+from homeassistant.const import UnitOfTemperature
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
@@ -13,13 +13,14 @@ from homeassistant.helpers.restore_state import (
     RestoreEntity,
 )  # To restore last stored value
 
+from . import DOMAIN
+
 NAME_KEY = "name"
 MIN_TEMP_KEY = "min_temp"
 MAX_TEMP_KEY = "max_temp"
 
-DOMAIN = "emulated_temp_sensor"
 DEFAULT_NAME = "Emulated Temperature Sensor"
-UNIQUE_ID_PREFIX = "PoliTo.e-Lite.LM"
+UNIQUE_ID_PREFIX = "PoliTo.eLite.LM."
 
 # Work but does not support scan_interval
 # PLATFORM_SCHEMA = vol.Schema(
@@ -75,7 +76,7 @@ class EmulatedTempSensor(SensorEntity, RestoreEntity):
     ) -> None:
         """Initialize the sensor."""
         self._sensor_name = name
-        self._unique_id = UNIQUE_ID_PREFIX + "." + self._sensor_name
+        self._unique_id = UNIQUE_ID_PREFIX + self._sensor_name
         self._MIN_TMP: Final[int] = min_temp
         self._MAX_TMP: Final[int] = max_temp
         self._state = None
@@ -113,7 +114,7 @@ class EmulatedTempSensor(SensorEntity, RestoreEntity):
     @property
     def unit_of_measurement(self) -> str:
         """Return the unit of measurement."""
-        return TEMP_CELSIUS
+        return UnitOfTemperature.CELSIUS
 
     def update(self) -> None:
         """Fetch new state data for the sensor.
