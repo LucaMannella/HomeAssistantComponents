@@ -68,6 +68,7 @@ class EmulatedTempSensorAvg(SensorEntity):
         self._MAX_TMP: Final[int] = max_temp
         self._state = self.compute_random_temp()
         _LOGGER.info("Initial temperature: %s", str(self._state))
+        self._file_path = "./custom_components/" + DOMAIN + "/temperatures.txt"
         self.append_last_temperature(self._state)
 
     def compute_random_temp(self) -> float:
@@ -78,7 +79,7 @@ class EmulatedTempSensorAvg(SensorEntity):
 
     def append_last_temperature(self, temperature: float) -> None:
         """This method appends the current state to the consumption file"""
-        with open("./temperatures.txt", "a+", encoding="utf-8") as temperature_file:
+        with open(self._file_path, "a+", encoding="utf-8") as temperature_file:
             current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             text_to_write = f"{current_time}: {temperature:.2f}\n"
             temperature_file.write(text_to_write)
@@ -116,7 +117,7 @@ class EmulatedTempSensorAvg(SensorEntity):
         """This method computes the average temperature."""
         lines = 0
         overall = 0
-        with open("./temperatures.txt", "r", encoding="utf-8") as temperature_file:
+        with open(self._file_path, "r", encoding="utf-8") as temperature_file:
             line = temperature_file.readline()
             while line:
                 value = float(line.split()[2])
