@@ -5,10 +5,11 @@ import logging
 
 # Import the device class from the component that you want to support
 from homeassistant.core import HomeAssistant
-from homeassistant.components.light import LightEntity
+from homeassistant.components.light import LightEntity, DOMAIN as LIGHT_DOMAIN
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 
+from . import DOMAIN
 
 DEFAULT_NAME = "Light Target"
 NAME_KEY = "name"
@@ -38,6 +39,7 @@ class LightTarget(LightEntity):
 
     def __init__(self, name: str = DEFAULT_NAME) -> None:
         """Initialize a LightTarget."""
+        self._attr_unique_id = "PoliTo.eLite.LM." + LIGHT_DOMAIN + "." + DOMAIN
         self._name = name
         self._brightness = None
         self._state = False
@@ -70,14 +72,12 @@ class LightTarget(LightEntity):
         """Instruct the light to turn on."""
         self._brightness = 255
         self._state = True
-        self.schedule_update_ha_state()
         _LOGGER.debug("Turned on!")
 
     def turn_off(self, **kwargs: Any) -> None:
         """Instruct the light to turn off."""
         self._brightness = 0
         self._state = False
-        self.schedule_update_ha_state()
         _LOGGER.debug("Turned off!")
 
     def update(self) -> None:

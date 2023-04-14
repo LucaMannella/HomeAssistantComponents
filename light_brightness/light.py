@@ -7,12 +7,15 @@ import logging
 from homeassistant.core import HomeAssistant
 from homeassistant.components.light import (
     LightEntity,
+    DOMAIN as LIGHT_DOMAIN,
     ATTR_BRIGHTNESS_PCT,
     ColorMode,
     SUPPORT_BRIGHTNESS,
 )
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
+
+from . import DOMAIN
 
 DEFAULT_NAME = "Light Brightness"
 NAME_KEY = "name"
@@ -46,6 +49,7 @@ class LightBrightness(LightEntity):
         self._state = False
         self._brightness = None
         self._attr_color_mode = ColorMode.BRIGHTNESS
+        self._attr_unique_id = "PoliTo.eLite.LM." + LIGHT_DOMAIN + "." + DOMAIN
 
         _LOGGER.info("<%s> was created", self._name)
 
