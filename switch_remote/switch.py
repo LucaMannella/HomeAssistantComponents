@@ -11,10 +11,12 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 
+from . import DOMAIN
+
 NAME_KEY = "name"
 URL_KEY = "url"
 DEFAULT_NAME = "Switch Remote"
-DOMAIN = "switch_remote"
+
 
 UPDATE_STATUS = GET_LAST_STATUS = "/api/switches/1"
 
