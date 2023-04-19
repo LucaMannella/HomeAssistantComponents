@@ -29,6 +29,7 @@ UPDATE_STATUS = GET_LAST_STATUS = "/api/switches/1"
 
 _LOGGER = logging.getLogger(__name__)
 
+
 def setup_platform(
     hass: HomeAssistant,
     config: ConfigType,
@@ -56,10 +57,10 @@ class SwitchRemote(SwitchEntity):
     def __init__(self, name, url):
         self._name = name
         self._url = url
-        self._get_url = self._url+GET_LAST_STATUS
-        self._put_url = self._url+UPDATE_STATUS
+        self._get_url = self._url + GET_LAST_STATUS
+        self._put_url = self._url + UPDATE_STATUS
         remote_value = self._get_remote_value()
-        if remote_value == None:
+        if remote_value is None:
             self._attr_is_on = False
         else:
             self._attr_is_on = remote_value
@@ -70,7 +71,8 @@ class SwitchRemote(SwitchEntity):
         return self._name
 
     def _get_remote_value(self) -> bool:
-        response = requests.get(self._get_url, allow_redirects=True)
+        """This method periodically checks if the status of the switch was remotely updated."""
+        response = requests.get(self._get_url, allow_redirects=True, timeout=10)
         if response.status_code != 200:
             _LOGGER.error("Impossible to retrieve switch status!")
             return None
@@ -93,32 +95,38 @@ class SwitchRemote(SwitchEntity):
         """Turn the switch off."""
         self.update_value(False)
 
-    def update_value(self, value:bool):
+    def update_value(self, value: bool):
         # time.sleep(2)
         self._attr_is_on = value
         if self._update_remote_value():
             _LOGGER.debug("Switch status succesfully updated to <%s>", self._attr_is_on)
         else:
-            _LOGGER.error("Impossible to update switch status on remote server: <%s>", self._url)
+            _LOGGER.error(
+                "Impossible to update switch's status on remote server: <%s>", self._url
+            )
 
     def _update_remote_value(self) -> bool:
-        response = requests.put(self._put_url, json={"value": self._attr_is_on, "id":1, "user":1})
+        response = requests.put(
+            self._put_url,
+            json={"value": self._attr_is_on, "id": 1, "user": 1},
+            timeout=10,
+        )
         if response.status_code == 200:
             return True
         else:
-            _LOGGER.error("Error storing temperature: %s", response.json()["error"])
+            _LOGGER.error("Error storing new status: %s", response.json()["error"])
             return False
 
     def update(self) -> None:
         """Fetch new state data for the sensor.
-
         This is the only method that should fetch new data for Home Assistant.
         """
         remote_value = self._get_remote_value()
-        if remote_value == None:
+        if remote_value is None:
             _LOGGER.error("Impossible to retrieve remote status!")
         else:
             if remote_value != self._attr_is_on:
-                _LOGGER.info("New value <%s> fetched from <%s>", remote_value, self._url)
+                _LOGGER.info(
+                    "New value <%s> fetched from <%s>", remote_value, self._url
+                )
                 self._attr_is_on = remote_value
-
