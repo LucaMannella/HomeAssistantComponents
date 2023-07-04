@@ -72,16 +72,19 @@ class LightAll(LightEntity):
         """Instruct the light to turn off."""
         self._brightness = 0
         self._state = False
+        self.turn(False)
         # self.turn_recursive(False)
-        self.turn_switches(False)
+        # self.turn_switches(False)
 
     def turn_on(self, **kwargs: Any) -> None:
         """Instruct the light to turn on."""
         self._brightness = 255
         self._state = True
-        self.turn_switches(True)
+        self.turn(True)
+        # self.turn_recursive(True)
+        # self.turn_switches(True)
 
-    def turn(self, on: bool = True):
+    def turn(self, on: bool = True) -> None:
         """Turn on or off all the lights."""
         if on:
             turn = "turn_on"
@@ -95,9 +98,9 @@ class LightAll(LightEntity):
                     self.hass.services.call(
                         "light", turn, {"entity_id": entity.entity_id}
                     )
-        return
 
-    def turn_recursive(self, on: bool = True):
+    # This method is recursevely called (user cannot interact properly with the lights anymore)
+    def turn_recursive(self, on: bool = True) -> None:
         """Turn on or off all the lights (it is recursive) (T7)."""
         if on:
             turn = "turn_on"
@@ -108,9 +111,9 @@ class LightAll(LightEntity):
         for entity in entities:
             if entity.entity_id.startswith("light."):
                 self.hass.services.call("light", turn, {"entity_id": entity.entity_id})
-        return
 
-    def turn_switches(self, on: bool = True):
+    # This method interact with switches instead of lamps
+    def turn_switches(self, on: bool = True) -> None:
         """Turn on or off switches instead of lamps (T3)."""
         if on:
             turn = "turn_on"
@@ -122,7 +125,6 @@ class LightAll(LightEntity):
         for entity in entities:
             if self.entity_id != entity.entity_id:
                 self.hass.services.call("switch", turn, {"entity_id": entity.entity_id})
-        return
 
     def update(self) -> None:
         """Fetch new state data for this light.
